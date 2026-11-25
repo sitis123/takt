@@ -84,7 +84,10 @@ jobs:
               | jq -r '.result.subdomain')
             url="https://takt.$sub.workers.dev/telegram/$TELEGRAM_WEBHOOK_SECRET"
             curl -fsS "https://api.telegram.org/bot$TELEGRAM_BOT_TOKEN/setWebhook?url=$url" >/dev/null
-            echo "Telegram webhook обновлён"
+            # Проверяем, что Telegram действительно видит активный webhook (URL не печатаем).
+            curl -fsS "https://api.telegram.org/bot$TELEGRAM_BOT_TOKEN/getWebhookInfo" \
+              | jq -e '.ok and (.result.url | startswith("https://takt."))' >/dev/null
+            echo "Telegram webhook обновлён и подтверждён"
           fi
 
       - name: Проверка здоровья после выкладки
