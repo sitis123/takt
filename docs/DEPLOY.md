@@ -1,4 +1,15 @@
-# Деплой: GitHub + Cloudflare + VPS
+# Деплой: GitHub + Cloudflare
+
+## Как развёрнуто сейчас (рабочий контур)
+
+- Код: `https://github.com/sitis123/takt` (приватный репозиторий, ветка `main`).
+- Приложение: Cloudflare Worker `takt`, база D1 `takt-db`.
+- Адрес: `https://takt.gwsuite.workers.dev/` (домен покупать не нужно).
+- Проверка здоровья: `https://takt.gwsuite.workers.dev/api/health`.
+- Автодеплой: `.github/workflows/cloudflare.yml` — на каждый `push` в `main` прогоняет тесты, собирает Worker, проверяет/создаёт D1, выкладывает Worker и проверяет health.
+- Cron: `*/5 * * * *` — планировщик напоминаний внутри Worker.
+
+Секреты репозитория: `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID`; переменная `CLOUDFLARE_DEPLOY=true` включает workflow. Для Telegram добавьте `TELEGRAM_BOT_TOKEN` и `TELEGRAM_WEBHOOK_SECRET` — workflow сам поставит webhook и подключит бота.
 
 ## Схема
 
@@ -21,10 +32,9 @@ Cloudflare: HTTPS, WAF, домен takt.example.com
 
 ## Что понадобится
 
-1. Аккаунт GitHub и приватный репозиторий `takt`.
-2. VPS с Ubuntu 24.04 (достаточно 1 vCPU / 1 GB), пользователь `root` или sudo.
-3. Домен, делегированный на Cloudflare, и аккаунт Cloudflare с Zero Trust.
-4. Токен Telegram-бота и chat id для уведомлений.
+Для текущего облачного контура — только аккаунты GitHub и Cloudflare. VPS, домен и Zero Trust не нужны: Worker доступен на бесплатном `workers.dev`.
+
+VPS-вариант ниже оставлен как альтернатива, если позже понадобится свой домен, постоянное соединение или интеграции, недоступные Worker'у. Для него понадобятся VPS с Ubuntu 24.04, домен в Cloudflare и токен Telegram-бота.
 
 ## 1. GitHub
 
