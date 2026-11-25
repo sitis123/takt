@@ -27,6 +27,10 @@ def test_worker_bundle_contains_routes_schema_and_assets() -> None:
         "CREATE TABLE IF NOT EXISTS",
         "export default",
         "async scheduled",
+        "export.xlsx",
+        "/api/agent/digest",
+        "isGemini",
+        "tg_chat:",
     ):
         assert needle in bundle, f"В бандле нет: {needle}"
 

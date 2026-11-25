@@ -277,6 +277,11 @@ async function deleteSetting(env, key) {
   await dbRun(env, "DELETE FROM settings WHERE key = ?", [key]);
 }
 
+async function knownChats(env) {
+  const rows = await dbAll(env, "SELECT key FROM settings WHERE key LIKE 'tg_chat:%'");
+  return rows.map((row) => String(row.key).slice(8)).filter(Boolean);
+}
+
 async function counts(env) {
   const [documents, unpaid, overdue, openTasks, pending] = await Promise.all([
     dbOne(env, "SELECT count(*) AS n FROM documents"),
@@ -606,6 +611,19 @@ function aiEnabled(env) {
   return Boolean(env.AI_BASE_URL && env.AI_API_KEY);
 }
 
+function isGemini(env) {
+  return /generativelanguage\.googleapis\.com/i.test(String(env.AI_BASE_URL || ""));
+}
+
+function aiModel(env, kind = "chat") {
+  const fallback = isGemini(env)
+    ? "gemini-2.0-flash"
+    : "gpt-4o-mini";
+  if (kind === "vision" && env.AI_VISION_MODEL) return String(env.AI_VISION_MODEL);
+  if (kind === "chat" && env.AI_MODEL) return String(env.AI_MODEL);
+  return fallback;
+}
+
 function aiUrl(env, path) {
   return `${String(env.AI_BASE_URL).replace(/\/+$/, "")}/${String(path).replace(/^\/+/, "")}`;
 }
@@ -618,7 +636,7 @@ async function aiChatJson(env, system, user, model) {
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
-      model: model || env.AI_MODEL || "gpt-4o-mini",
+      model: model || aiModel(env),
       messages: [{ role: "system", content: system }, { role: "user", content: user }],
       response_format: { type: "json_object" },
       temperature: 0,
@@ -659,7 +677,7 @@ async function aiVisionToText(env, bytes, mime = "image/jpeg") {
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
-      model: env.AI_VISION_MODEL || "gpt-4o-mini",
+      model: aiModel(env, "vision"),
       messages: [
         {
           role: "system",
@@ -681,7 +699,34 @@ async function aiVisionToText(env, bytes, mime = "image/jpeg") {
   return String(data?.choices?.[0]?.message?.content ?? "");
 }
 
+async function aiTranscribeGemini(env, bytes) {
+  const model = aiModel(env);
+  const response = await fetch(
+    `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent?key=${encodeURIComponent(env.AI_API_KEY)}`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        contents: [{
+          parts: [
+            { text: "Расшифруй эту аудиозапись дословно, по-русски. Верни только текст расшифровки, без пояснений." },
+            { inline_data: { mime_type: "audio/ogg", data: bytesToBase64(bytes) } },
+          ],
+        }],
+        generationConfig: { temperature: 0 },
+      }),
+    }
+  );
+  if (!response.ok) throw new Error(`Gemini HTTP ${response.status}`);
+  const data = await response.json();
+  const parts = data?.candidates?.[0]?.content?.parts || [];
+  const text = parts.map((part) => String(part?.text || "")).join("").trim();
+  if (!text) throw new Error("Gemini вернул пустую расшифровку");
+  return text;
+}
+
 async function aiTranscribe(env, bytes, filename = "voice.ogg") {
+  if (isGemini(env)) return aiTranscribeGemini(env, bytes);
   const form = new FormData();
   form.append("file", new Blob([bytes], { type: "audio/ogg" }), filename);
   form.append("model", env.AI_MODEL || "gpt-4o-mini");
@@ -837,6 +882,54 @@ async function weeklyReport(env) {
   return lines.join("\n");
 }
 
+// --- дежурный агент: сам видит, что пора потрогать ----------------------
+
+async function agentDigest(env) {
+  const today = isoDateOnly();
+  const [c, documents, tasks] = await Promise.all([
+    counts(env),
+    getDocuments(env, { limit: 200 }),
+    getTasks(env, "open", 200),
+  ]);
+  const lines = [
+    `Такт · дежурный обзор · ${isoDateOnly().split("-").reverse().join(".")}`,
+    "",
+    `Счетов: ${c.documents} · ждут оплаты: ${c.unpaid} · просрочено: ${c.overdue}`,
+    `Открытых задач: ${c.open_tasks} · напоминаний в очереди: ${c.pending_reminders}`,
+  ];
+  const advice = [];
+  const overdueDocs = documents.filter(
+    (doc) => doc.due_date && doc.due_date < today && doc.status !== "paid"
+  );
+  if (overdueDocs.length) {
+    advice.push(`Напомнить по просроченным: ${overdueDocs.slice(0, 3).map((doc) => `#${pad4(doc.id)} ${doc.client_name}`).join(", ")}`);
+  }
+  const dueTasks = tasks.filter((task) => task.due_date && task.due_date <= today);
+  if (dueTasks.length) {
+    advice.push(`Закрыть задачи с сроком сегодня: ${dueTasks.slice(0, 3).map((task) => task.title).join(", ")}`);
+  }
+  if (!advice.length) advice.push("Рутина под контролем — ничего не горит.");
+  lines.push("", "Что сделать:", ...advice.map((item) => `• ${item}`));
+  return lines.join("\n");
+}
+
+async function runAgentDigest(env) {
+  const chats = await knownChats(env);
+  if (!chats.length) return 0;
+  const text = await agentDigest(env);
+  let sent = 0;
+  for (const chat of chats) {
+    try {
+      await sendTelegramMessage(env, chat, text);
+      sent += 1;
+    } catch {
+      // Один недоступный чат не должен ломать остальные.
+    }
+  }
+  if (sent) await logEvent(env, "agent.digest", `${sent} чат(ов)`);
+  return sent;
+}
+
 // --- Telegram ----------------------------------------------------------
 
 function normaliseChatId(value) {
@@ -973,6 +1066,7 @@ async function handleTelegramUpdate(env, update) {
   const chatId = message?.chat?.id;
   if (chatId === undefined || chatId === null) return;
   try {
+    await setSetting(env, `tg_chat:${chatId}`, "1");
     const text = String(message.text || message.caption || "");
     const command = text.trim().match(/^\/(\w+)(?:@[\w_]+)?\s*([\s\S]*)$/);
     if (command) {
@@ -1074,6 +1168,178 @@ function fileResponse(file) {
   });
 }
 
+// --- настоящий .xlsx без внешних библиотек (ZIP store + XML) --------------
+
+const CRC_TABLE = (() => {
+  const table = new Uint32Array(256);
+  for (let n = 0; n < 256; n += 1) {
+    let value = n;
+    for (let bit = 0; bit < 8; bit += 1) {
+      value = value & 1 ? 0xEDB88320 ^ (value >>> 1) : value >>> 1;
+    }
+    table[n] = value >>> 0;
+  }
+  return table;
+})();
+
+function crc32(bytes) {
+  let crc = 0xFFFFFFFF;
+  for (const byte of bytes) crc = CRC_TABLE[(crc ^ byte) & 0xFF] ^ (crc >>> 8);
+  return (crc ^ 0xFFFFFFFF) >>> 0;
+}
+
+function zipStore(files) {
+  const encoder = new TextEncoder();
+  const parts = [];
+  const central = [];
+  let offset = 0;
+  for (const file of files) {
+    const name = encoder.encode(file.name);
+    const data = file.data;
+    const crc = crc32(data);
+    const local = new Uint8Array(30 + name.length);
+    const localView = new DataView(local.buffer);
+    localView.setUint32(0, 0x04034B50, true);
+    localView.setUint16(4, 20, true);
+    localView.setUint16(6, 0, true);
+    localView.setUint16(8, 0, true);
+    localView.setUint32(14, crc, true);
+    localView.setUint32(18, data.length, true);
+    localView.setUint32(22, data.length, true);
+    localView.setUint16(26, name.length, true);
+    local.set(name, 30);
+    parts.push(local, data);
+
+    const directory = new Uint8Array(46 + name.length);
+    const directoryView = new DataView(directory.buffer);
+    directoryView.setUint32(0, 0x02014B50, true);
+    directoryView.setUint16(4, 20, true);
+    directoryView.setUint16(6, 20, true);
+    directoryView.setUint32(16, crc, true);
+    directoryView.setUint32(20, data.length, true);
+    directoryView.setUint32(24, data.length, true);
+    directoryView.setUint16(28, name.length, true);
+    directoryView.setUint32(42, offset, true);
+    directory.set(name, 46);
+    central.push(directory);
+    offset += local.length + data.length;
+  }
+  const centralSize = central.reduce((sum, entry) => sum + entry.length, 0);
+  const end = new Uint8Array(22);
+  const endView = new DataView(end.buffer);
+  endView.setUint32(0, 0x06054B50, true);
+  endView.setUint16(8, files.length, true);
+  endView.setUint16(10, files.length, true);
+  endView.setUint32(12, centralSize, true);
+  endView.setUint32(16, offset, true);
+  return new Blob([...parts, ...central, end], {
+    type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+  });
+}
+
+function xmlEscape(value) {
+  return String(value ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+}
+
+function columnName(index) {
+  let name = "";
+  let number = index + 1;
+  while (number > 0) {
+    number -= 1;
+    name = String.fromCharCode(65 + (number % 26)) + name;
+    number = Math.floor(number / 26);
+  }
+  return name;
+}
+
+function xlsxRows(doc) {
+  const rows = [
+    ["Такт — документ", "", ""],
+    ["Тип", doc.kind === "invoice" ? "Счёт и акт" : "Таблица", ""],
+    ["Номер", pad4(doc.id), ""],
+    ["Клиент", doc.client_name || "", ""],
+    ["Дата", doc.created_at || "", ""],
+    ["Срок оплаты", doc.due_date || "", ""],
+    ["Статус", doc.status || "", ""],
+    ["Сумма, ₽", Number(doc.amount || 0), ""],
+    ["", "", ""],
+  ];
+  const csv = String(doc.payload?.csv_text || "");
+  if (csv) {
+    rows.push(["Строки таблицы", "", ""]);
+    for (const line of csv.split(/\r?\n/).filter(Boolean)) {
+      rows.push(line.split(/[;|]/).map((cell) => cell.trim()));
+    }
+  }
+  return rows;
+}
+
+function documentXlsx(doc) {
+  const encoder = new TextEncoder();
+  const rows = xlsxRows(doc);
+  const sheetRows = rows.map((row, rowIndex) => {
+    const cells = row.map((value, columnIndex) => {
+      const reference = `${columnName(columnIndex)}${rowIndex + 1}`;
+      if (typeof value === "number" && Number.isFinite(value)) {
+        return `<c r="${reference}"><v>${value}</v></c>`;
+      }
+      return `<c r="${reference}" t="inlineStr"><is><t xml:space="preserve">${xmlEscape(value)}</t></is></c>`;
+    }).join("");
+    return `<row r="${rowIndex + 1}">${cells}</row>`;
+  }).join("");
+  const files = [
+    ["[Content_Types].xml", `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">
+<Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>
+<Default Extension="xml" ContentType="application/xml"/>
+<Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/>
+<Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>
+<Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/>
+</Types>`],
+    ["_rels/.rels", `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/>
+</Relationships>`],
+    ["xl/workbook.xml", `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">
+<sheets><sheet name="Такт" sheetId="1" r:id="rId1"/></sheets>
+</workbook>`],
+    ["xl/_rels/workbook.xml.rels", `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/>
+<Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/>
+</Relationships>`],
+    ["xl/styles.xml", `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">
+<fonts count="1"><font><sz val="11"/><name val="Calibri"/></font></fonts>
+<fills count="1"><fill><patternFill patternType="none"/></fill></fills>
+<borders count="1"><border/></borders>
+<cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs>
+<cellXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/></cellXfs>
+</styleSheet>`],
+    ["xl/worksheets/sheet1.xml", `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">
+<sheetData>${sheetRows}</sheetData>
+</worksheet>`],
+  ].map(([name, text]) => ({ name, data: encoder.encode(text) }));
+  return zipStore(files);
+}
+
+function xlsxResponse(doc) {
+  const name = `takt-${pad4(doc.id)}.xlsx`;
+  return new Response(documentXlsx(doc), {
+    status: 200,
+    headers: {
+      "Content-Type": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      "Content-Disposition": `attachment; filename="${name}"`,
+    },
+  });
+}
+
 async function readBody(request) {
   let parsed;
   try {
@@ -1142,6 +1408,13 @@ async function routeApi(request, env, url, path, method) {
     return fileResponse(file);
   }
 
+  match = path.match(/^\/api\/documents\/(\d+)\/export\.xlsx$/);
+  if (match && method === "GET") {
+    const doc = await getDocument(env, Number(match[1]));
+    if (!doc) return httpError(404, "Документ не найден");
+    return xlsxResponse(doc);
+  }
+
   match = path.match(/^\/api\/documents\/(\d+)\/download$/);
   if (match && method === "GET") {
     const doc = await getDocument(env, Number(match[1]));
@@ -1171,6 +1444,14 @@ async function routeApi(request, env, url, path, method) {
 
   if (path === "/api/reports/weekly" && method === "GET") {
     return json({ text: await weeklyReport(env) });
+  }
+
+  if (path === "/api/agent/digest" && method === "GET") {
+    return json({ text: await agentDigest(env), chats: await knownChats(env) });
+  }
+
+  if (path === "/api/agent/digest/send" && method === "POST") {
+    return json({ sent: await runAgentDigest(env) });
   }
 
   if (path === "/api/reminders/due" && method === "GET") {
@@ -1241,6 +1522,14 @@ export default {
       await flushReminders(env);
     } catch {
       // Никаких логов с токенами и секретами.
+    }
+    const now = new Date();
+    if (now.getUTCHours() === 9 && now.getUTCMinutes() < 5) {
+      try {
+        await runAgentDigest(env);
+      } catch {
+        // Утренний обзор не должен мешать напоминаниям.
+      }
     }
   },
 };

@@ -40,7 +40,7 @@ class AI:
             self._url("chat/completions"),
             headers=self._headers(),
             json={
-                "model": model or self.config.ai_model,
+                "model": model or self.config.model,
                 "messages": [
                     {"role": "system", "content": system},
                     {"role": "user", "content": user},
@@ -72,7 +72,7 @@ class AI:
             self._url("chat/completions"),
             headers=self._headers(),
             json={
-                "model": self.config.ai_vision_model,
+                "model": self.config.vision_model,
                 "messages": [
                     {
                         "role": "system",
@@ -99,6 +99,30 @@ class AI:
     def transcribe(self, audio_bytes: bytes, filename: str = "voice.ogg") -> str:
         if not self.enabled:
             raise AIError("AI не настроен")
+        if self.config.is_gemini:
+            response = self._client.post(
+                "https://generativelanguage.googleapis.com/v1beta/models/"
+                f"{self.config.model}:generateContent",
+                params={"key": self.config.ai_api_key},
+                json={
+                    "contents": [{
+                        "parts": [
+                            {"text": "Расшифруй аудиозапись дословно, по-русски. Только текст."},
+                            {"inline_data": {
+                                "mime_type": "audio/ogg",
+                                "data": base64.b64encode(audio_bytes).decode("ascii"),
+                            }},
+                        ],
+                    }],
+                    "generationConfig": {"temperature": 0},
+                },
+            )
+            response.raise_for_status()
+            parts = response.json()["candidates"][0]["content"]["parts"]
+            text = "".join(str(part.get("text", "")) for part in parts).strip()
+            if not text:
+                raise AIError("Gemini вернул пустую расшифровку")
+            return text
         response = self._client.post(
             self._url("audio/transcriptions"),
             headers={"Authorization": f"Bearer {self.config.ai_api_key}"},

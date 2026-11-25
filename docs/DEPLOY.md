@@ -9,7 +9,9 @@
 - Автодеплой: `.github/workflows/cloudflare.yml` — на каждый `push` в `main` прогоняет тесты, собирает Worker, проверяет/создаёт D1, выкладывает Worker и проверяет health.
 - Cron: `*/5 * * * *` — планировщик напоминаний внутри Worker.
 
-Секреты репозитория: `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID`, `TELEGRAM_BOT_TOKEN`, `TELEGRAM_WEBHOOK_SECRET`; переменная `CLOUDFLARE_DEPLOY=true` включает workflow. Telegram-бот подключён: workflow ставит webhook на `https://takt.gwsuite.workers.dev/telegram/<секрет>` и проверяет через `getWebhookInfo`, что Telegram его видит. Секрет в URL надёжно прячет endpoint от посторонних. Токен бота и API-токен Cloudflare не должны попадать в логи и чаты; при утечке перевыпустите их и обновите Secrets.
+Секреты репозитория: `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID`, `TELEGRAM_BOT_TOKEN`, `TELEGRAM_WEBHOOK_SECRET`; переменная `CLOUDFLARE_DEPLOY=true` включает workflow. Telegram-бот подключён: workflow ставит webhook на `https://takt.gwsuite.workers.dev/telegram/<секрет>` и проверяет через `getWebhookInfo`, что Telegram его видит. Секрет в URL надёжно прячет endpoint от посторонних. Для Gemini добавьте `AI_BASE_URL=https://generativelanguage.googleapis.com/v1beta/openai` и `AI_API_KEY=<ключ>` в Secrets — фото, голос и умный разбор договора включатся после ближайшего деплоя. Токен бота, Gemini и API-токен Cloudflare не должны попадать в логи и чаты; при утечке перевыпустите их и обновите Secrets.
+
+Дежурный агент: cron каждые 5 минут разбирает напоминания, а в 09:00 UTC отправляет в известные чаты короткий обзор просрочек и задач (`/api/agent/digest` — посмотреть текст вручную).
 
 ## Схема
 

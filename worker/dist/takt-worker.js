@@ -1,4 +1,4 @@
-const ASSETS = {"index.html": "<!doctype html>\n<html lang=\"ru\">\n<head>\n  <meta charset=\"utf-8\">\n  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">\n  <title>Такт — администратор рутины</title>\n  <link rel=\"stylesheet\" href=\"/web/styles.css\">\n</head>\n<body>\n  <div class=\"grain\" aria-hidden=\"true\"></div>\n\n  <header class=\"topbar\">\n    <div class=\"brand\">\n      <span class=\"brand__mark\">ТАКТ</span>\n      <span class=\"brand__note\">тихий администратор рутины</span>\n    </div>\n    <div class=\"topbar__right\">\n      <span class=\"pulse\"><i></i> работает без тебя</span>\n      <button class=\"btn btn--ghost\" id=\"report-btn\">Отчёт за неделю</button>\n    </div>\n  </header>\n\n  <main class=\"layout\">\n    <section class=\"rail\" aria-label=\"Сводка\">\n      <div class=\"rail__title\">Сегодня</div>\n      <div class=\"stat stat--ink\">\n        <span class=\"stat__num\" id=\"stat-unpaid\">—</span>\n        <span class=\"stat__label\">ждут оплаты</span>\n        <span class=\"stat__hint\" id=\"stat-overdue\">просрочек нет</span>\n      </div>\n      <div class=\"stat stat--sage\">\n        <span class=\"stat__num\" id=\"stat-tasks\">—</span>\n        <span class=\"stat__label\">открытых задач</span>\n        <span class=\"stat__hint\">записано и не забыто</span>\n      </div>\n      <div class=\"stat stat--gold\">\n        <span class=\"stat__num\" id=\"stat-docs\">—</span>\n        <span class=\"stat__label\">документов всего</span>\n        <span class=\"stat__hint\">счета, акты, импорты</span>\n      </div>\n      <div class=\"rail__note\" id=\"clock\">—</div>\n    </section>\n\n    <section class=\"feed\">\n      <div class=\"section-head\">\n        <h1>Поток дел</h1>\n        <span class=\"section-head__meta\" id=\"feed-meta\">загружаем…</span>\n      </div>\n      <div class=\"cards\" id=\"documents\"></div>\n    </section>\n\n    <aside class=\"side\">\n      <div class=\"section-head section-head--small\">\n        <h2>Ритм</h2>\n        <span class=\"section-head__meta\">напоминания и задачи</span>\n      </div>\n      <div class=\"rhythm\" id=\"rhythm\"></div>\n      <div class=\"events\">\n        <div class=\"events__title\">Что случилось только что</div>\n        <ol id=\"events\"></ol>\n      </div>\n    </aside>\n  </main>\n\n  <section class=\"composer\" aria-label=\"Быстрый ввод\">\n    <div class=\"composer__inner\">\n      <div class=\"modes\" role=\"tablist\">\n        <button class=\"mode is-active\" data-mode=\"invoice\" role=\"tab\">Счёт и акт</button>\n        <button class=\"mode\" data-mode=\"capture\" role=\"tab\">Таблица</button>\n        <button class=\"mode\" data-mode=\"task\" role=\"tab\">Задача</button>\n      </div>\n      <div class=\"composer__row\">\n        <textarea id=\"input\" rows=\"2\" placeholder=\"Вставь договор, переписку, таблицу или просто скажи, что нужно сделать…\"></textarea>\n        <button class=\"btn btn--primary\" id=\"submit\">Отпустить <span>↵</span></button>\n      </div>\n      <div class=\"composer__foot\">\n        <span id=\"hint\">Ctrl+Enter — отправить · / — фокус</span>\n        <span id=\"status\" aria-live=\"polite\"></span>\n      </div>\n    </div>\n  </section>\n\n  <div class=\"drawer\" id=\"drawer\" hidden>\n    <div class=\"drawer__sheet\">\n      <button class=\"drawer__close\" id=\"drawer-close\" aria-label=\"Закрыть\">×</button>\n      <div class=\"drawer__title\">Отчёт за неделю</div>\n      <pre id=\"report-text\"></pre>\n    </div>\n  </div>\n\n  <div class=\"toast\" id=\"toast\" hidden></div>\n  <script src=\"/web/app.js\"></script>\n</body>\n</html>\n", "styles.css": ":root {\n  --paper: #f3ede2;\n  --paper-2: #fbf7ef;\n  --ink: #24211c;\n  --muted: #7b7367;\n  --rule: #ded4c2;\n  --accent: #b6553a;\n  --sage: #66775d;\n  --gold: #a98435;\n  --shadow: 0 18px 40px -28px rgba(45, 35, 24, .55);\n  --spring: cubic-bezier(.18, .89, .32, 1.28);\n}\n\n* { box-sizing: border-box; }\n\nhtml, body { min-height: 100%; }\n\nbody {\n  margin: 0;\n  padding-bottom: 210px;\n  background: var(--paper);\n  color: var(--ink);\n  font: 15px/1.55 -apple-system, BlinkMacSystemFont, \"Segoe UI\", sans-serif;\n  -webkit-font-smoothing: antialiased;\n}\n\n.grain {\n  position: fixed;\n  inset: 0;\n  z-index: 10;\n  pointer-events: none;\n  opacity: .32;\n  mix-blend-mode: multiply;\n  background-image: url(\"data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.86' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.35'/%3E%3C/svg%3E\");\n}\n\n.topbar {\n  display: flex;\n  align-items: flex-end;\n  justify-content: space-between;\n  gap: 24px;\n  padding: 34px clamp(20px, 4vw, 64px) 22px;\n  border-bottom: 1px solid var(--rule);\n}\n\n.brand { display: flex; flex-direction: column; gap: 4px; }\n.brand__mark {\n  font: 400 40px/1 Georgia, serif;\n  letter-spacing: .22em;\n  transform: translateY(2px);\n}\n.brand__note {\n  font-size: 11px;\n  letter-spacing: .13em;\n  text-transform: uppercase;\n  color: var(--muted);\n}\n\n.topbar__right { display: flex; align-items: center; gap: 22px; }\n.pulse {\n  display: inline-flex;\n  align-items: center;\n  gap: 9px;\n  font-size: 12px;\n  color: var(--muted);\n}\n.pulse i {\n  width: 8px; height: 8px;\n  border-radius: 50%;\n  background: var(--sage);\n  box-shadow: 0 0 0 0 rgba(102, 119, 93, .45);\n  animation: breathe 3.2s infinite;\n}\n@keyframes breathe {\n  0%, 100% { box-shadow: 0 0 0 0 rgba(102, 119, 93, .45); }\n  50% { box-shadow: 0 0 0 7px rgba(102, 119, 93, 0); }\n}\n\n.btn {\n  font: 600 12px/1 inherit;\n  letter-spacing: .06em;\n  border: 1px solid var(--ink);\n  border-radius: 999px;\n  padding: 11px 18px;\n  background: var(--paper-2);\n  color: var(--ink);\n  cursor: pointer;\n  transition: transform .22s var(--spring), box-shadow .22s ease, background .22s ease;\n  box-shadow: 0 3px 0 rgba(36, 33, 28, .14);\n}\n.btn:hover { transform: translateY(-2px); box-shadow: 0 6px 0 rgba(36, 33, 28, .12); }\n.btn:active { transform: translateY(2px); box-shadow: 0 0 0 rgba(0, 0, 0, 0); }\n.btn--ghost { border-color: var(--rule); background: transparent; color: var(--muted); }\n.btn--primary {\n  background: var(--ink);\n  color: var(--paper-2);\n  border-color: var(--ink);\n  padding: 14px 22px;\n  font-size: 13px;\n  white-space: nowrap;\n}\n.btn--primary span { opacity: .55; margin-left: 6px; }\n\n.layout {\n  display: grid;\n  grid-template-columns: 230px minmax(0, 1fr) 290px;\n  gap: clamp(18px, 3vw, 42px);\n  padding: 42px clamp(20px, 4vw, 64px) 60px;\n  align-items: start;\n}\n\n.rail { display: flex; flex-direction: column; gap: 16px; }\n.rail__title, .section-head__meta, .events__title {\n  font-size: 11px;\n  letter-spacing: .14em;\n  text-transform: uppercase;\n  color: var(--muted);\n}\n.rail__title { margin-bottom: 2px; }\n\n.stat {\n  position: relative;\n  overflow: hidden;\n  padding: 20px 18px 18px;\n  border-radius: 18px 22px 16px 20px;\n  background: var(--paper-2);\n  border: 1px solid var(--rule);\n  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .9), var(--shadow);\n  transition: transform .3s var(--spring);\n}\n.stat:hover { transform: translateY(-3px) rotate(-.4deg); }\n.stat::after {\n  content: \"\";\n  position: absolute;\n  right: -18px; top: -18px;\n  width: 70px; height: 70px;\n  border-radius: 50%;\n  border: 1px solid currentColor;\n  opacity: .12;\n}\n.stat--ink { color: var(--accent); }\n.stat--sage { color: var(--sage); }\n.stat--gold { color: var(--gold); }\n.stat__num {\n  display: block;\n  font: 400 46px/.95 Georgia, serif;\n  letter-spacing: -.03em;\n}\n.stat__label {\n  display: block;\n  margin: 10px 0 4px;\n  font-size: 13px;\n  color: var(--ink);\n}\n.stat__hint { display: block; font-size: 11px; color: var(--muted); }\n.rail__note {\n  margin-top: 6px;\n  font: 12px/1.5 ui-monospace, SFMono-Regular, Consolas, monospace;\n  color: var(--muted);\n}\n\n.section-head { display: flex; align-items: baseline; justify-content: space-between; gap: 16px; margin-bottom: 22px; }\n.section-head h1 { margin: 0; font: 400 34px/1 Georgia, serif; letter-spacing: -.015em; }\n.section-head h2 { margin: 0; font: 400 24px/1 Georgia, serif; }\n.section-head--small { margin-bottom: 16px; }\n\n.cards { display: flex; flex-direction: column; gap: 12px; }\n.card {\n  position: relative;\n  display: grid;\n  grid-template-columns: 62px 1fr auto;\n  gap: 16px;\n  align-items: center;\n  padding: 16px 18px;\n  border: 1px solid var(--rule);\n  border-radius: 14px 18px 14px 16px;\n  background: var(--paper-2);\n  box-shadow: var(--shadow);\n  transition: transform .25s var(--spring), border-color .25s ease;\n}\n.card:hover { transform: translateX(4px); border-color: #c9bba3; }\n.card__num {\n  font: 12px/1.2 ui-monospace, SFMono-Regular, Consolas, monospace;\n  color: var(--muted);\n}\n.card__title { font-size: 15px; }\n.card__meta { font-size: 12px; color: var(--muted); margin-top: 3px; }\n.card__right { text-align: right; display: flex; flex-direction: column; gap: 8px; align-items: flex-end; }\n.card__amount { font: 18px/1 Georgia, serif; white-space: nowrap; }\n.pill {\n  display: inline-block;\n  padding: 4px 9px;\n  border-radius: 999px;\n  font-size: 10px;\n  letter-spacing: .08em;\n  text-transform: uppercase;\n  border: 1px solid currentColor;\n}\n.pill--sent { color: var(--accent); }\n.pill--paid { color: var(--sage); }\n.pill--draft, .pill--done { color: var(--muted); }\n.linkbtn {\n  border: 0; background: none; padding: 0;\n  font: 600 11px/1 inherit; color: var(--accent);\n  cursor: pointer; letter-spacing: .04em;\n}\n.linkbtn:hover { text-decoration: underline; }\n\n.side { display: flex; flex-direction: column; gap: 24px; }\n.rhythm { display: flex; flex-direction: column; gap: 9px; }\n.beat {\n  display: flex; gap: 12px; align-items: flex-start;\n  padding: 12px 14px;\n  border-left: 2px solid var(--gold);\n  background: rgba(251, 247, 239, .65);\n  border-radius: 0 12px 12px 0;\n}\n.beat__dot { width: 7px; height: 7px; border-radius: 50%; background: var(--gold); margin-top: 7px; flex: none; }\n.beat__text { font-size: 13px; }\n.beat__date { font-size: 11px; color: var(--muted); margin-top: 3px; }\n.beat--task { border-left-color: var(--sage); }\n.beat--task .beat__dot { background: var(--sage); }\n\n.events ol { list-style: none; margin: 10px 0 0; padding: 0; }\n.events li {\n  display: flex; gap: 9px; padding: 7px 0;\n  border-bottom: 1px dashed var(--rule);\n  font-size: 12px; color: var(--muted);\n}\n.events li time { font: 11px/1.5 ui-monospace, Consolas, monospace; opacity: .7; flex: none; }\n\n.composer {\n  position: fixed;\n  left: 0; right: 0; bottom: 0;\n  z-index: 8;\n  padding: 18px clamp(20px, 4vw, 64px) 22px;\n  background: linear-gradient(180deg, rgba(243, 237, 226, 0), var(--paper) 22%);\n}\n.composer__inner {\n  max-width: 1120px;\n  margin: 0 auto;\n  padding: 16px 18px 12px;\n  border: 1px solid #cfc3ae;\n  border-radius: 20px 24px 18px 22px;\n  background: var(--paper-2);\n  box-shadow: 0 -10px 50px -30px rgba(40, 30, 20, .6), inset 0 1px 0 #fff;\n}\n.modes { display: flex; gap: 6px; margin-bottom: 12px; }\n.mode {\n  border: 1px solid transparent;\n  background: transparent;\n  padding: 7px 13px;\n  border-radius: 999px;\n  font: 600 11px/1 inherit;\n  letter-spacing: .06em;\n  color: var(--muted);\n  cursor: pointer;\n  transition: all .2s ease;\n}\n.mode:hover { color: var(--ink); }\n.mode.is-active {\n  background: var(--ink); color: var(--paper-2);\n  transform: translateY(-1px);\n  box-shadow: 0 3px 0 rgba(36, 33, 28, .16);\n}\n.composer__row { display: flex; gap: 12px; align-items: stretch; }\ntextarea {\n  flex: 1;\n  resize: none;\n  min-height: 58px;\n  padding: 13px 15px;\n  border: 1px solid var(--rule);\n  border-radius: 12px 15px 12px 14px;\n  background: #fffdf8;\n  color: var(--ink);\n  font: 14px/1.5 inherit;\n  outline: none;\n  transition: border-color .2s, box-shadow .2s;\n}\ntextarea:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(182, 85, 58, .12); }\n.composer__foot {\n  display: flex; justify-content: space-between;\n  margin-top: 9px; font-size: 11px; color: var(--muted);\n}\n\n.drawer { position: fixed; inset: 0; z-index: 20; background: rgba(30, 26, 20, .42); backdrop-filter: blur(3px); }\n.drawer__sheet {\n  position: absolute; right: 0; top: 0; bottom: 0;\n  width: min(520px, 92vw);\n  padding: 42px 34px;\n  background: var(--paper-2);\n  box-shadow: -20px 0 60px -30px rgba(0, 0, 0, .5);\n  animation: slide .32s var(--spring);\n}\n@keyframes slide { from { transform: translateX(30px); opacity: .4; } }\n.drawer__close { position: absolute; top: 18px; right: 22px; border: 0; background: none; font-size: 28px; cursor: pointer; color: var(--muted); }\n.drawer__title { font: 400 26px/1 Georgia, serif; margin-bottom: 22px; }\n.drawer pre { white-space: pre-wrap; font: 13px/1.7 ui-monospace, Consolas, monospace; color: var(--ink); }\n\n.toast {\n  position: fixed; left: 50%; bottom: 200px; z-index: 30;\n  transform: translateX(-50%);\n  padding: 12px 20px;\n  border-radius: 999px;\n  background: var(--ink); color: var(--paper-2);\n  font-size: 13px;\n  box-shadow: 0 14px 30px -16px rgba(0, 0, 0, .6);\n  animation: rise .3s var(--spring);\n}\n@keyframes rise { from { transform: translate(-50%, 12px); opacity: 0; } }\n\n.empty { padding: 30px; text-align: center; color: var(--muted); font-size: 13px; border: 1px dashed var(--rule); border-radius: 16px; }\n\n@media (max-width: 1100px) {\n  .layout { grid-template-columns: 190px minmax(0, 1fr); }\n  .side { grid-column: 1 / -1; flex-direction: row; flex-wrap: wrap; }\n  .side > * { flex: 1 1 260px; }\n}\n@media (max-width: 720px) {\n  body { padding-bottom: 240px; }\n  .layout { grid-template-columns: 1fr; }\n  .rail { flex-direction: row; flex-wrap: wrap; }\n  .stat { flex: 1 1 140px; }\n  .topbar { align-items: flex-start; flex-direction: column; }\n  .card { grid-template-columns: 48px 1fr; }\n  .card__right { grid-column: 2; align-items: flex-start; }\n  .composer__row { flex-direction: column; }\n  .btn--primary { align-self: flex-end; }\n}\n", "app.js": "const $ = (selector) => document.querySelector(selector);\nconst $$ = (selector) => Array.from(document.querySelectorAll(selector));\n\nlet mode = \"invoice\";\nlet toastTimer;\n\nasync function api(path, options = {}) {\n  const response = await fetch(path, {\n    headers: { \"Content-Type\": \"application/json\" },\n    ...options,\n  });\n  if (!response.ok) {\n    const body = await response.json().catch(() => ({ detail: response.statusText }));\n    throw new Error(body.detail || response.statusText);\n  }\n  return response.json();\n}\n\nconst escapeHtml = (value) =>\n  String(value ?? \"\").replace(/[&<>\"']/g, (char) =>\n    ({ \"&\": \"&amp;\", \"<\": \"&lt;\", \">\": \"&gt;\", '\"': \"&quot;\", \"'\": \"&#39;\" })[char]\n  );\n\nconst money = (value) =>\n  new Intl.NumberFormat(\"ru-RU\", { style: \"currency\", currency: \"RUB\", maximumFractionDigits: 2 }).format(value || 0);\n\nfunction toast(message, isError = false) {\n  const node = $(\"#toast\");\n  node.textContent = message;\n  node.style.background = isError ? \"#8c3b2b\" : \"#24211c\";\n  node.hidden = false;\n  clearTimeout(toastTimer);\n  toastTimer = setTimeout(() => { node.hidden = true; }, 3600);\n}\n\nfunction statusLabels(kind, status) {\n  if (kind === \"capture\") return [\"done\", \"импорт\"];\n  return [status === \"paid\" ? \"paid\" : \"sent\", status === \"paid\" ? \"оплачено\" : \"в работе\"];\n}\n\nfunction renderDocuments(documents) {\n  const container = $(\"#documents\");\n  if (!documents.length) {\n    container.innerHTML = '<div class=\"empty\">Пока тихо. Вставь текст ниже — и появится первый документ.</div>';\n    return;\n  }\n  container.innerHTML = documents.map((doc) => {\n    const [pillClass, pillText] = statusLabels(doc.kind, doc.status);\n    const number = `${doc.kind === \"capture\" ? \"И\" : \"С\"}-${String(doc.id).padStart(4, \"0\")}`;\n    const due = doc.due_date ? `оплата до ${escapeHtml(doc.due_date)}` : escapeHtml(String(doc.created_at).slice(0, 10));\n    const files = doc.kind === \"invoice\"\n      ? `<a class=\"linkbtn\" href=\"/api/documents/${doc.id}/download?key=invoice_file\" target=\"_blank\">счёт ↗</a>\n         <a class=\"linkbtn\" href=\"/api/documents/${doc.id}/download?key=act_file\" target=\"_blank\">акт ↗</a>`\n      : `<span class=\"card__meta\">${escapeHtml(doc.payload?.rows ?? 0)} строк</span>`;\n    const pay = doc.kind === \"invoice\" && doc.status !== \"paid\"\n      ? `<button class=\"linkbtn\" data-paid=\"${doc.id}\">отметить оплату</button>` : \"\";\n    return `<article class=\"card\">\n      <div class=\"card__num\">${number}</div>\n      <div>\n        <div class=\"card__title\">${escapeHtml(doc.title)}</div>\n        <div class=\"card__meta\">${escapeHtml(doc.client_name)} · ${due}</div>\n      </div>\n      <div class=\"card__right\">\n        <div class=\"card__amount\">${money(doc.amount)}</div>\n        <span class=\"pill pill--${pillClass}\">${pillText}</span>\n        <div>${files}${pay}</div>\n      </div>\n    </article>`;\n  }).join(\"\");\n}\n\nfunction renderRhythm(data) {\n  const container = $(\"#rhythm\");\n  const beats = [];\n  for (const task of data.tasks || []) {\n    beats.push(`<div class=\"beat beat--task\">\n      <span class=\"beat__dot\"></span>\n      <div><div class=\"beat__text\">${escapeHtml(task.title)}</div>\n      <div class=\"beat__date\">${task.due_date ? `до ${escapeHtml(task.due_date)}` : \"без срока\"} · задача</div></div>\n    </div>`);\n  }\n  for (const doc of data.documents || []) {\n    if (doc.due_date && doc.status !== \"paid\" && doc.kind === \"invoice\") {\n      beats.push(`<div class=\"beat\">\n        <span class=\"beat__dot\"></span>\n        <div><div class=\"beat__text\">${escapeHtml(doc.client_name)} — ${money(doc.amount)}</div>\n        <div class=\"beat__date\">до ${escapeHtml(doc.due_date)} · оплата</div></div>\n      </div>`);\n    }\n  }\n  container.innerHTML = beats.length ? beats.join(\"\") : '<div class=\"empty\">Ритм спокойный.</div>';\n}\n\nconst eventNames = {\n  \"document.created\": \"новый документ\",\n  \"document.updated\": \"документ обновлён\",\n  \"payment.received\": \"оплата пришла\",\n  \"task.created\": \"задача записана\",\n  \"task.done\": \"задача закрыта\",\n  \"reminder.sent\": \"напоминание ушло\",\n};\n\nfunction renderEvents(events) {\n  $(\"#events\").innerHTML = (events || []).map((event) => {\n    const time = String(event.created_at || \"\").slice(11, 16);\n    return `<li><time>${escapeHtml(time)}</time><span>${escapeHtml(eventNames[event.kind] || event.kind)} · ${escapeHtml(event.detail)}</span></li>`;\n  }).join(\"\") || '<li>Событий пока нет.</li>';\n}\n\nasync function load() {\n  try {\n    const data = await api(\"/api/overview\");\n    const counts = data.counts;\n    $(\"#stat-unpaid\").textContent = counts.unpaid;\n    $(\"#stat-overdue\").textContent = counts.overdue ? `${counts.overdue} просрочено` : \"просрочек нет\";\n    $(\"#stat-tasks\").textContent = counts.open_tasks;\n    $(\"#stat-docs\").textContent = counts.documents;\n    $(\"#feed-meta\").textContent = `${counts.documents} документов · ${counts.pending_reminders} напоминаний`;\n    renderDocuments(data.documents);\n    renderRhythm(data);\n    renderEvents(data.events);\n  } catch (error) {\n    toast(`Не загрузилось: ${error.message}`, true);\n  }\n}\n\nasync function markPaid(id) {\n  try {\n    await api(`/api/documents/${id}/paid`, { method: \"POST\" });\n    toast(\"Отмечено оплаченным\");\n    await load();\n  } catch (error) {\n    toast(error.message, true);\n  }\n}\n\nasync function submit() {\n  const input = $(\"#input\");\n  const text = input.value.trim();\n  if (!text) { toast(\"Напиши хоть что-нибудь\", true); return; }\n  const endpoints = {\n    invoice: [\"/api/invoices\", { text, due_days: 7 }],\n    capture: [\"/api/capture\", { text }],\n    task: [\"/api/tasks\", { text, source: \"web\" }],\n  };\n  const [path, body] = endpoints[mode];\n  const button = $(\"#submit\");\n  button.disabled = true;\n  $(\"#status\").textContent = \"делаем…\";\n  try {\n    const result = await api(path, { method: \"POST\", body: JSON.stringify(body) });\n    const messages = {\n      invoice: `Счёт №${result.id} готов`,\n      capture: `Импортировано строк: ${result.rows}`,\n      task: `Задача #${result.id} записана`,\n    };\n    toast(messages[mode]);\n    input.value = \"\";\n    await load();\n  } catch (error) {\n    toast(error.message, true);\n  } finally {\n    button.disabled = false;\n    $(\"#status\").textContent = \"\";\n  }\n}\n\nfunction tickClock() {\n  const now = new Date();\n  $(\"#clock\").textContent = new Intl.DateTimeFormat(\"ru-RU\", {\n    day: \"2-digit\", month: \"long\", hour: \"2-digit\", minute: \"2-digit\",\n  }).format(now);\n}\n\n$$(\".mode\").forEach((button) => {\n  button.addEventListener(\"click\", () => {\n    mode = button.dataset.mode;\n    $$(\".mode\").forEach((item) => item.classList.toggle(\"is-active\", item === button));\n    const placeholders = {\n      invoice: \"Вставь договор или переписку: клиент, сумма, срок…\",\n      capture: \"Вставь таблицу с разделителем | или ;\",\n      task: \"Что нужно сделать? Можно с датой: «до 25 ноября»\",\n    };\n    $(\"#input\").placeholder = placeholders[mode];\n    $(\"#input\").focus();\n  });\n});\n\n$(\"#submit\").addEventListener(\"click\", submit);\n$(\"#documents\").addEventListener(\"click\", (event) => {\n  const id = event.target.dataset.paid;\n  if (id) markPaid(id);\n});\n\n$(\"#report-btn\").addEventListener(\"click\", async () => {\n  try {\n    const data = await api(\"/api/reports/weekly\");\n    $(\"#report-text\").textContent = data.text;\n    $(\"#drawer\").hidden = false;\n  } catch (error) {\n    toast(error.message, true);\n  }\n});\n$(\"#drawer-close\").addEventListener(\"click\", () => { $(\"#drawer\").hidden = true; });\n$(\"#drawer\").addEventListener(\"click\", (event) => {\n  if (event.target === $(\"#drawer\")) $(\"#drawer\").hidden = true;\n});\n\ndocument.addEventListener(\"keydown\", (event) => {\n  if (event.key === \"Escape\") $(\"#drawer\").hidden = true;\n  if ((event.ctrlKey || event.metaKey) && event.key === \"Enter\") { event.preventDefault(); submit(); }\n  if (event.key === \"/\" && document.activeElement !== $(\"#input\")) {\n    event.preventDefault();\n    $(\"#input\").focus();\n  }\n});\n\ntickClock();\nsetInterval(tickClock, 30000);\nload();\n"};
+const ASSETS = {"index.html": "<!doctype html>\n<html lang=\"ru\">\n<head>\n  <meta charset=\"utf-8\">\n  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">\n  <title>Такт — администратор рутины</title>\n  <link rel=\"stylesheet\" href=\"/web/styles.css\">\n</head>\n<body>\n  <div class=\"grain\" aria-hidden=\"true\"></div>\n\n  <header class=\"topbar\">\n    <div class=\"brand\">\n      <span class=\"brand__mark\">ТАКТ</span>\n      <span class=\"brand__note\">тихий администратор рутины</span>\n    </div>\n    <div class=\"topbar__right\">\n      <span class=\"pulse\"><i></i> работает без тебя</span>\n      <button class=\"btn btn--ghost\" id=\"report-btn\">Отчёт за неделю</button>\n    </div>\n  </header>\n\n  <main class=\"layout\">\n    <section class=\"rail\" aria-label=\"Сводка\">\n      <div class=\"rail__title\">Сегодня</div>\n      <div class=\"stat stat--ink\">\n        <span class=\"stat__num\" id=\"stat-unpaid\">—</span>\n        <span class=\"stat__label\">ждут оплаты</span>\n        <span class=\"stat__hint\" id=\"stat-overdue\">просрочек нет</span>\n      </div>\n      <div class=\"stat stat--sage\">\n        <span class=\"stat__num\" id=\"stat-tasks\">—</span>\n        <span class=\"stat__label\">открытых задач</span>\n        <span class=\"stat__hint\">записано и не забыто</span>\n      </div>\n      <div class=\"stat stat--gold\">\n        <span class=\"stat__num\" id=\"stat-docs\">—</span>\n        <span class=\"stat__label\">документов всего</span>\n        <span class=\"stat__hint\">счета, акты, импорты</span>\n      </div>\n      <div class=\"rail__note\" id=\"clock\">—</div>\n    </section>\n\n    <section class=\"feed\">\n      <div class=\"section-head\">\n        <h1>Поток дел</h1>\n        <span class=\"section-head__meta\" id=\"feed-meta\">загружаем…</span>\n      </div>\n      <div class=\"cards\" id=\"documents\"></div>\n    </section>\n\n    <aside class=\"side\">\n      <div class=\"section-head section-head--small\">\n        <h2>Ритм</h2>\n        <span class=\"section-head__meta\">напоминания и задачи</span>\n      </div>\n      <div class=\"rhythm\" id=\"rhythm\"></div>\n      <div class=\"events\">\n        <div class=\"events__title\">Что случилось только что</div>\n        <ol id=\"events\"></ol>\n      </div>\n    </aside>\n  </main>\n\n  <section class=\"composer\" aria-label=\"Быстрый ввод\">\n    <div class=\"composer__inner\">\n      <div class=\"modes\" role=\"tablist\">\n        <button class=\"mode is-active\" data-mode=\"invoice\" role=\"tab\">Счёт и акт</button>\n        <button class=\"mode\" data-mode=\"capture\" role=\"tab\">Таблица</button>\n        <button class=\"mode\" data-mode=\"task\" role=\"tab\">Задача</button>\n      </div>\n      <div class=\"composer__row\">\n        <textarea id=\"input\" rows=\"2\" placeholder=\"Вставь договор, переписку, таблицу или просто скажи, что нужно сделать…\"></textarea>\n        <button class=\"btn btn--primary\" id=\"submit\">Отпустить <span>↵</span></button>\n      </div>\n      <div class=\"composer__foot\">\n        <span id=\"hint\">Ctrl+Enter — отправить · / — фокус</span>\n        <span id=\"status\" aria-live=\"polite\"></span>\n      </div>\n    </div>\n  </section>\n\n  <div class=\"drawer\" id=\"drawer\" hidden>\n    <div class=\"drawer__sheet\">\n      <button class=\"drawer__close\" id=\"drawer-close\" aria-label=\"Закрыть\">×</button>\n      <div class=\"drawer__title\">Отчёт за неделю</div>\n      <pre id=\"report-text\"></pre>\n    </div>\n  </div>\n\n  <div class=\"toast\" id=\"toast\" hidden></div>\n  <script src=\"/web/app.js\"></script>\n</body>\n</html>\n", "styles.css": ":root {\n  --paper: #f3ede2;\n  --paper-2: #fbf7ef;\n  --ink: #24211c;\n  --muted: #7b7367;\n  --rule: #ded4c2;\n  --accent: #b6553a;\n  --sage: #66775d;\n  --gold: #a98435;\n  --shadow: 0 18px 40px -28px rgba(45, 35, 24, .55);\n  --spring: cubic-bezier(.18, .89, .32, 1.28);\n}\n\n* { box-sizing: border-box; }\n\nhtml, body { min-height: 100%; }\n\nbody {\n  margin: 0;\n  padding-bottom: 210px;\n  background: var(--paper);\n  color: var(--ink);\n  font: 15px/1.55 -apple-system, BlinkMacSystemFont, \"Segoe UI\", sans-serif;\n  -webkit-font-smoothing: antialiased;\n}\n\n.grain {\n  position: fixed;\n  inset: 0;\n  z-index: 10;\n  pointer-events: none;\n  opacity: .32;\n  mix-blend-mode: multiply;\n  background-image: url(\"data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.86' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.35'/%3E%3C/svg%3E\");\n}\n\n.topbar {\n  display: flex;\n  align-items: flex-end;\n  justify-content: space-between;\n  gap: 24px;\n  padding: 34px clamp(20px, 4vw, 64px) 22px;\n  border-bottom: 1px solid var(--rule);\n}\n\n.brand { display: flex; flex-direction: column; gap: 4px; }\n.brand__mark {\n  font: 400 40px/1 Georgia, serif;\n  letter-spacing: .22em;\n  transform: translateY(2px);\n}\n.brand__note {\n  font-size: 11px;\n  letter-spacing: .13em;\n  text-transform: uppercase;\n  color: var(--muted);\n}\n\n.topbar__right { display: flex; align-items: center; gap: 22px; }\n.pulse {\n  display: inline-flex;\n  align-items: center;\n  gap: 9px;\n  font-size: 12px;\n  color: var(--muted);\n}\n.pulse i {\n  width: 8px; height: 8px;\n  border-radius: 50%;\n  background: var(--sage);\n  box-shadow: 0 0 0 0 rgba(102, 119, 93, .45);\n  animation: breathe 3.2s infinite;\n}\n@keyframes breathe {\n  0%, 100% { box-shadow: 0 0 0 0 rgba(102, 119, 93, .45); }\n  50% { box-shadow: 0 0 0 7px rgba(102, 119, 93, 0); }\n}\n\n.btn {\n  font: 600 12px/1 inherit;\n  letter-spacing: .06em;\n  border: 1px solid var(--ink);\n  border-radius: 999px;\n  padding: 11px 18px;\n  background: var(--paper-2);\n  color: var(--ink);\n  cursor: pointer;\n  transition: transform .22s var(--spring), box-shadow .22s ease, background .22s ease;\n  box-shadow: 0 3px 0 rgba(36, 33, 28, .14);\n}\n.btn:hover { transform: translateY(-2px); box-shadow: 0 6px 0 rgba(36, 33, 28, .12); }\n.btn:active { transform: translateY(2px); box-shadow: 0 0 0 rgba(0, 0, 0, 0); }\n.btn--ghost { border-color: var(--rule); background: transparent; color: var(--muted); }\n.btn--primary {\n  background: var(--ink);\n  color: var(--paper-2);\n  border-color: var(--ink);\n  padding: 14px 22px;\n  font-size: 13px;\n  white-space: nowrap;\n}\n.btn--primary span { opacity: .55; margin-left: 6px; }\n\n.layout {\n  display: grid;\n  grid-template-columns: 230px minmax(0, 1fr) 290px;\n  gap: clamp(18px, 3vw, 42px);\n  padding: 42px clamp(20px, 4vw, 64px) 60px;\n  align-items: start;\n}\n\n.rail { display: flex; flex-direction: column; gap: 16px; }\n.rail__title, .section-head__meta, .events__title {\n  font-size: 11px;\n  letter-spacing: .14em;\n  text-transform: uppercase;\n  color: var(--muted);\n}\n.rail__title { margin-bottom: 2px; }\n\n.stat {\n  position: relative;\n  overflow: hidden;\n  padding: 20px 18px 18px;\n  border-radius: 18px 22px 16px 20px;\n  background: var(--paper-2);\n  border: 1px solid var(--rule);\n  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .9), var(--shadow);\n  transition: transform .3s var(--spring);\n}\n.stat:hover { transform: translateY(-3px) rotate(-.4deg); }\n.stat::after {\n  content: \"\";\n  position: absolute;\n  right: -18px; top: -18px;\n  width: 70px; height: 70px;\n  border-radius: 50%;\n  border: 1px solid currentColor;\n  opacity: .12;\n}\n.stat--ink { color: var(--accent); }\n.stat--sage { color: var(--sage); }\n.stat--gold { color: var(--gold); }\n.stat__num {\n  display: block;\n  font: 400 46px/.95 Georgia, serif;\n  letter-spacing: -.03em;\n}\n.stat__label {\n  display: block;\n  margin: 10px 0 4px;\n  font-size: 13px;\n  color: var(--ink);\n}\n.stat__hint { display: block; font-size: 11px; color: var(--muted); }\n.rail__note {\n  margin-top: 6px;\n  font: 12px/1.5 ui-monospace, SFMono-Regular, Consolas, monospace;\n  color: var(--muted);\n}\n\n.section-head { display: flex; align-items: baseline; justify-content: space-between; gap: 16px; margin-bottom: 22px; }\n.section-head h1 { margin: 0; font: 400 34px/1 Georgia, serif; letter-spacing: -.015em; }\n.section-head h2 { margin: 0; font: 400 24px/1 Georgia, serif; }\n.section-head--small { margin-bottom: 16px; }\n\n.cards { display: flex; flex-direction: column; gap: 12px; }\n.card {\n  position: relative;\n  display: grid;\n  grid-template-columns: 62px 1fr auto;\n  gap: 16px;\n  align-items: center;\n  padding: 16px 18px;\n  border: 1px solid var(--rule);\n  border-radius: 14px 18px 14px 16px;\n  background: var(--paper-2);\n  box-shadow: var(--shadow);\n  transition: transform .25s var(--spring), border-color .25s ease;\n}\n.card:hover { transform: translateX(4px); border-color: #c9bba3; }\n.card__num {\n  font: 12px/1.2 ui-monospace, SFMono-Regular, Consolas, monospace;\n  color: var(--muted);\n}\n.card__title { font-size: 15px; }\n.card__meta { font-size: 12px; color: var(--muted); margin-top: 3px; }\n.card__right { text-align: right; display: flex; flex-direction: column; gap: 8px; align-items: flex-end; }\n.card__amount { font: 18px/1 Georgia, serif; white-space: nowrap; }\n.pill {\n  display: inline-block;\n  padding: 4px 9px;\n  border-radius: 999px;\n  font-size: 10px;\n  letter-spacing: .08em;\n  text-transform: uppercase;\n  border: 1px solid currentColor;\n}\n.pill--sent { color: var(--accent); }\n.pill--paid { color: var(--sage); }\n.pill--draft, .pill--done { color: var(--muted); }\n.linkbtn {\n  border: 0; background: none; padding: 0;\n  font: 600 11px/1 inherit; color: var(--accent);\n  cursor: pointer; letter-spacing: .04em;\n}\n.linkbtn:hover { text-decoration: underline; }\n\n.side { display: flex; flex-direction: column; gap: 24px; }\n.rhythm { display: flex; flex-direction: column; gap: 9px; }\n.beat {\n  display: flex; gap: 12px; align-items: flex-start;\n  padding: 12px 14px;\n  border-left: 2px solid var(--gold);\n  background: rgba(251, 247, 239, .65);\n  border-radius: 0 12px 12px 0;\n}\n.beat__dot { width: 7px; height: 7px; border-radius: 50%; background: var(--gold); margin-top: 7px; flex: none; }\n.beat__text { font-size: 13px; }\n.beat__date { font-size: 11px; color: var(--muted); margin-top: 3px; }\n.beat--task { border-left-color: var(--sage); }\n.beat--task .beat__dot { background: var(--sage); }\n\n.events ol { list-style: none; margin: 10px 0 0; padding: 0; }\n.events li {\n  display: flex; gap: 9px; padding: 7px 0;\n  border-bottom: 1px dashed var(--rule);\n  font-size: 12px; color: var(--muted);\n}\n.events li time { font: 11px/1.5 ui-monospace, Consolas, monospace; opacity: .7; flex: none; }\n\n.composer {\n  position: fixed;\n  left: 0; right: 0; bottom: 0;\n  z-index: 8;\n  padding: 18px clamp(20px, 4vw, 64px) 22px;\n  background: linear-gradient(180deg, rgba(243, 237, 226, 0), var(--paper) 22%);\n}\n.composer__inner {\n  max-width: 1120px;\n  margin: 0 auto;\n  padding: 16px 18px 12px;\n  border: 1px solid #cfc3ae;\n  border-radius: 20px 24px 18px 22px;\n  background: var(--paper-2);\n  box-shadow: 0 -10px 50px -30px rgba(40, 30, 20, .6), inset 0 1px 0 #fff;\n}\n.modes { display: flex; gap: 6px; margin-bottom: 12px; }\n.mode {\n  border: 1px solid transparent;\n  background: transparent;\n  padding: 7px 13px;\n  border-radius: 999px;\n  font: 600 11px/1 inherit;\n  letter-spacing: .06em;\n  color: var(--muted);\n  cursor: pointer;\n  transition: all .2s ease;\n}\n.mode:hover { color: var(--ink); }\n.mode.is-active {\n  background: var(--ink); color: var(--paper-2);\n  transform: translateY(-1px);\n  box-shadow: 0 3px 0 rgba(36, 33, 28, .16);\n}\n.composer__row { display: flex; gap: 12px; align-items: stretch; }\ntextarea {\n  flex: 1;\n  resize: none;\n  min-height: 58px;\n  padding: 13px 15px;\n  border: 1px solid var(--rule);\n  border-radius: 12px 15px 12px 14px;\n  background: #fffdf8;\n  color: var(--ink);\n  font: 14px/1.5 inherit;\n  outline: none;\n  transition: border-color .2s, box-shadow .2s;\n}\ntextarea:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(182, 85, 58, .12); }\n.composer__foot {\n  display: flex; justify-content: space-between;\n  margin-top: 9px; font-size: 11px; color: var(--muted);\n}\n\n.drawer { position: fixed; inset: 0; z-index: 20; background: rgba(30, 26, 20, .42); backdrop-filter: blur(3px); }\n.drawer__sheet {\n  position: absolute; right: 0; top: 0; bottom: 0;\n  width: min(520px, 92vw);\n  padding: 42px 34px;\n  background: var(--paper-2);\n  box-shadow: -20px 0 60px -30px rgba(0, 0, 0, .5);\n  animation: slide .32s var(--spring);\n}\n@keyframes slide { from { transform: translateX(30px); opacity: .4; } }\n.drawer__close { position: absolute; top: 18px; right: 22px; border: 0; background: none; font-size: 28px; cursor: pointer; color: var(--muted); }\n.drawer__title { font: 400 26px/1 Georgia, serif; margin-bottom: 22px; }\n.drawer pre { white-space: pre-wrap; font: 13px/1.7 ui-monospace, Consolas, monospace; color: var(--ink); }\n\n.toast {\n  position: fixed; left: 50%; bottom: 200px; z-index: 30;\n  transform: translateX(-50%);\n  padding: 12px 20px;\n  border-radius: 999px;\n  background: var(--ink); color: var(--paper-2);\n  font-size: 13px;\n  box-shadow: 0 14px 30px -16px rgba(0, 0, 0, .6);\n  animation: rise .3s var(--spring);\n}\n@keyframes rise { from { transform: translate(-50%, 12px); opacity: 0; } }\n\n.empty { padding: 30px; text-align: center; color: var(--muted); font-size: 13px; border: 1px dashed var(--rule); border-radius: 16px; }\n\n@media (max-width: 1100px) {\n  .layout { grid-template-columns: 190px minmax(0, 1fr); }\n  .side { grid-column: 1 / -1; flex-direction: row; flex-wrap: wrap; }\n  .side > * { flex: 1 1 260px; }\n}\n@media (max-width: 720px) {\n  body { padding-bottom: 240px; }\n  .layout { grid-template-columns: 1fr; }\n  .rail { flex-direction: row; flex-wrap: wrap; }\n  .stat { flex: 1 1 140px; }\n  .topbar { align-items: flex-start; flex-direction: column; }\n  .card { grid-template-columns: 48px 1fr; }\n  .card__right { grid-column: 2; align-items: flex-start; }\n  .composer__row { flex-direction: column; }\n  .btn--primary { align-self: flex-end; }\n}\n", "app.js": "const $ = (selector) => document.querySelector(selector);\nconst $$ = (selector) => Array.from(document.querySelectorAll(selector));\n\nlet mode = \"invoice\";\nlet toastTimer;\n\nasync function api(path, options = {}) {\n  const response = await fetch(path, {\n    headers: { \"Content-Type\": \"application/json\" },\n    ...options,\n  });\n  if (!response.ok) {\n    const body = await response.json().catch(() => ({ detail: response.statusText }));\n    throw new Error(body.detail || response.statusText);\n  }\n  return response.json();\n}\n\nconst escapeHtml = (value) =>\n  String(value ?? \"\").replace(/[&<>\"']/g, (char) =>\n    ({ \"&\": \"&amp;\", \"<\": \"&lt;\", \">\": \"&gt;\", '\"': \"&quot;\", \"'\": \"&#39;\" })[char]\n  );\n\nconst money = (value) =>\n  new Intl.NumberFormat(\"ru-RU\", { style: \"currency\", currency: \"RUB\", maximumFractionDigits: 2 }).format(value || 0);\n\nfunction toast(message, isError = false) {\n  const node = $(\"#toast\");\n  node.textContent = message;\n  node.style.background = isError ? \"#8c3b2b\" : \"#24211c\";\n  node.hidden = false;\n  clearTimeout(toastTimer);\n  toastTimer = setTimeout(() => { node.hidden = true; }, 3600);\n}\n\nfunction statusLabels(kind, status) {\n  if (kind === \"capture\") return [\"done\", \"импорт\"];\n  return [status === \"paid\" ? \"paid\" : \"sent\", status === \"paid\" ? \"оплачено\" : \"в работе\"];\n}\n\nfunction renderDocuments(documents) {\n  const container = $(\"#documents\");\n  if (!documents.length) {\n    container.innerHTML = '<div class=\"empty\">Пока тихо. Вставь текст ниже — и появится первый документ.</div>';\n    return;\n  }\n  container.innerHTML = documents.map((doc) => {\n    const [pillClass, pillText] = statusLabels(doc.kind, doc.status);\n    const number = `${doc.kind === \"capture\" ? \"И\" : \"С\"}-${String(doc.id).padStart(4, \"0\")}`;\n    const due = doc.due_date ? `оплата до ${escapeHtml(doc.due_date)}` : escapeHtml(String(doc.created_at).slice(0, 10));\n    const files = doc.kind === \"invoice\"\n      ? `<a class=\"linkbtn\" href=\"/api/documents/${doc.id}/download?key=invoice_file\" target=\"_blank\">счёт ↗</a>\n         <a class=\"linkbtn\" href=\"/api/documents/${doc.id}/download?key=act_file\" target=\"_blank\">акт ↗</a>`\n      : `<span class=\"card__meta\">${escapeHtml(doc.payload?.rows ?? 0)} строк</span>`;\n    const excel = `<a class=\"linkbtn\" href=\"/api/documents/${doc.id}/export.xlsx\">Excel ↓</a>`;\n    const pay = doc.kind === \"invoice\" && doc.status !== \"paid\"\n      ? `<button class=\"linkbtn\" data-paid=\"${doc.id}\">отметить оплату</button>` : \"\";\n    return `<article class=\"card\">\n      <div class=\"card__num\">${number}</div>\n      <div>\n        <div class=\"card__title\">${escapeHtml(doc.title)}</div>\n        <div class=\"card__meta\">${escapeHtml(doc.client_name)} · ${due}</div>\n      </div>\n      <div class=\"card__right\">\n        <div class=\"card__amount\">${money(doc.amount)}</div>\n        <span class=\"pill pill--${pillClass}\">${pillText}</span>\n        <div>${files}${excel}${pay}</div>\n      </div>\n    </article>`;\n  }).join(\"\");\n}\n\nfunction renderRhythm(data) {\n  const container = $(\"#rhythm\");\n  const beats = [];\n  for (const task of data.tasks || []) {\n    beats.push(`<div class=\"beat beat--task\">\n      <span class=\"beat__dot\"></span>\n      <div><div class=\"beat__text\">${escapeHtml(task.title)}</div>\n      <div class=\"beat__date\">${task.due_date ? `до ${escapeHtml(task.due_date)}` : \"без срока\"} · задача</div></div>\n    </div>`);\n  }\n  for (const doc of data.documents || []) {\n    if (doc.due_date && doc.status !== \"paid\" && doc.kind === \"invoice\") {\n      beats.push(`<div class=\"beat\">\n        <span class=\"beat__dot\"></span>\n        <div><div class=\"beat__text\">${escapeHtml(doc.client_name)} — ${money(doc.amount)}</div>\n        <div class=\"beat__date\">до ${escapeHtml(doc.due_date)} · оплата</div></div>\n      </div>`);\n    }\n  }\n  container.innerHTML = beats.length ? beats.join(\"\") : '<div class=\"empty\">Ритм спокойный.</div>';\n}\n\nconst eventNames = {\n  \"document.created\": \"новый документ\",\n  \"document.updated\": \"документ обновлён\",\n  \"payment.received\": \"оплата пришла\",\n  \"task.created\": \"задача записана\",\n  \"task.done\": \"задача закрыта\",\n  \"reminder.sent\": \"напоминание ушло\",\n};\n\nfunction renderEvents(events) {\n  $(\"#events\").innerHTML = (events || []).map((event) => {\n    const time = String(event.created_at || \"\").slice(11, 16);\n    return `<li><time>${escapeHtml(time)}</time><span>${escapeHtml(eventNames[event.kind] || event.kind)} · ${escapeHtml(event.detail)}</span></li>`;\n  }).join(\"\") || '<li>Событий пока нет.</li>';\n}\n\nasync function load() {\n  try {\n    const data = await api(\"/api/overview\");\n    const counts = data.counts;\n    $(\"#stat-unpaid\").textContent = counts.unpaid;\n    $(\"#stat-overdue\").textContent = counts.overdue ? `${counts.overdue} просрочено` : \"просрочек нет\";\n    $(\"#stat-tasks\").textContent = counts.open_tasks;\n    $(\"#stat-docs\").textContent = counts.documents;\n    $(\"#feed-meta\").textContent = `${counts.documents} документов · ${counts.pending_reminders} напоминаний`;\n    renderDocuments(data.documents);\n    renderRhythm(data);\n    renderEvents(data.events);\n  } catch (error) {\n    toast(`Не загрузилось: ${error.message}`, true);\n  }\n}\n\nasync function markPaid(id) {\n  try {\n    await api(`/api/documents/${id}/paid`, { method: \"POST\" });\n    toast(\"Отмечено оплаченным\");\n    await load();\n  } catch (error) {\n    toast(error.message, true);\n  }\n}\n\nasync function submit() {\n  const input = $(\"#input\");\n  const text = input.value.trim();\n  if (!text) { toast(\"Напиши хоть что-нибудь\", true); return; }\n  const endpoints = {\n    invoice: [\"/api/invoices\", { text, due_days: 7 }],\n    capture: [\"/api/capture\", { text }],\n    task: [\"/api/tasks\", { text, source: \"web\" }],\n  };\n  const [path, body] = endpoints[mode];\n  const button = $(\"#submit\");\n  button.disabled = true;\n  $(\"#status\").textContent = \"делаем…\";\n  try {\n    const result = await api(path, { method: \"POST\", body: JSON.stringify(body) });\n    const messages = {\n      invoice: `Счёт №${result.id} готов`,\n      capture: `Импортировано строк: ${result.rows}`,\n      task: `Задача #${result.id} записана`,\n    };\n    toast(messages[mode]);\n    input.value = \"\";\n    await load();\n  } catch (error) {\n    toast(error.message, true);\n  } finally {\n    button.disabled = false;\n    $(\"#status\").textContent = \"\";\n  }\n}\n\nfunction tickClock() {\n  const now = new Date();\n  $(\"#clock\").textContent = new Intl.DateTimeFormat(\"ru-RU\", {\n    day: \"2-digit\", month: \"long\", hour: \"2-digit\", minute: \"2-digit\",\n  }).format(now);\n}\n\n$$(\".mode\").forEach((button) => {\n  button.addEventListener(\"click\", () => {\n    mode = button.dataset.mode;\n    $$(\".mode\").forEach((item) => item.classList.toggle(\"is-active\", item === button));\n    const placeholders = {\n      invoice: \"Вставь договор или переписку: клиент, сумма, срок…\",\n      capture: \"Вставь таблицу с разделителем | или ;\",\n      task: \"Что нужно сделать? Можно с датой: «до 25 ноября»\",\n    };\n    $(\"#input\").placeholder = placeholders[mode];\n    $(\"#input\").focus();\n  });\n});\n\n$(\"#submit\").addEventListener(\"click\", submit);\n$(\"#documents\").addEventListener(\"click\", (event) => {\n  const id = event.target.dataset.paid;\n  if (id) markPaid(id);\n});\n\n$(\"#report-btn\").addEventListener(\"click\", async () => {\n  try {\n    const data = await api(\"/api/reports/weekly\");\n    $(\"#report-text\").textContent = data.text;\n    $(\"#drawer\").hidden = false;\n  } catch (error) {\n    toast(error.message, true);\n  }\n});\n$(\"#drawer-close\").addEventListener(\"click\", () => { $(\"#drawer\").hidden = true; });\n$(\"#drawer\").addEventListener(\"click\", (event) => {\n  if (event.target === $(\"#drawer\")) $(\"#drawer\").hidden = true;\n});\n\ndocument.addEventListener(\"keydown\", (event) => {\n  if (event.key === \"Escape\") $(\"#drawer\").hidden = true;\n  if ((event.ctrlKey || event.metaKey) && event.key === \"Enter\") { event.preventDefault(); submit(); }\n  if (event.key === \"/\" && document.activeElement !== $(\"#input\")) {\n    event.preventDefault();\n    $(\"#input\").focus();\n  }\n});\n\ntickClock();\nsetInterval(tickClock, 30000);\nload();\n"};
 
 // Такт на Cloudflare Workers: один файл, без npm-зависимостей.
 // Хранилище — D1 (binding env.DB). Схема совпадает со src/takt/db.py.
@@ -275,6 +275,11 @@ async function setSetting(env, key, value) {
 
 async function deleteSetting(env, key) {
   await dbRun(env, "DELETE FROM settings WHERE key = ?", [key]);
+}
+
+async function knownChats(env) {
+  const rows = await dbAll(env, "SELECT key FROM settings WHERE key LIKE 'tg_chat:%'");
+  return rows.map((row) => String(row.key).slice(8)).filter(Boolean);
 }
 
 async function counts(env) {
@@ -606,6 +611,19 @@ function aiEnabled(env) {
   return Boolean(env.AI_BASE_URL && env.AI_API_KEY);
 }
 
+function isGemini(env) {
+  return /generativelanguage\.googleapis\.com/i.test(String(env.AI_BASE_URL || ""));
+}
+
+function aiModel(env, kind = "chat") {
+  const fallback = isGemini(env)
+    ? "gemini-2.0-flash"
+    : "gpt-4o-mini";
+  if (kind === "vision" && env.AI_VISION_MODEL) return String(env.AI_VISION_MODEL);
+  if (kind === "chat" && env.AI_MODEL) return String(env.AI_MODEL);
+  return fallback;
+}
+
 function aiUrl(env, path) {
   return `${String(env.AI_BASE_URL).replace(/\/+$/, "")}/${String(path).replace(/^\/+/, "")}`;
 }
@@ -618,7 +636,7 @@ async function aiChatJson(env, system, user, model) {
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
-      model: model || env.AI_MODEL || "gpt-4o-mini",
+      model: model || aiModel(env),
       messages: [{ role: "system", content: system }, { role: "user", content: user }],
       response_format: { type: "json_object" },
       temperature: 0,
@@ -659,7 +677,7 @@ async function aiVisionToText(env, bytes, mime = "image/jpeg") {
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
-      model: env.AI_VISION_MODEL || "gpt-4o-mini",
+      model: aiModel(env, "vision"),
       messages: [
         {
           role: "system",
@@ -681,7 +699,34 @@ async function aiVisionToText(env, bytes, mime = "image/jpeg") {
   return String(data?.choices?.[0]?.message?.content ?? "");
 }
 
+async function aiTranscribeGemini(env, bytes) {
+  const model = aiModel(env);
+  const response = await fetch(
+    `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent?key=${encodeURIComponent(env.AI_API_KEY)}`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        contents: [{
+          parts: [
+            { text: "Расшифруй эту аудиозапись дословно, по-русски. Верни только текст расшифровки, без пояснений." },
+            { inline_data: { mime_type: "audio/ogg", data: bytesToBase64(bytes) } },
+          ],
+        }],
+        generationConfig: { temperature: 0 },
+      }),
+    }
+  );
+  if (!response.ok) throw new Error(`Gemini HTTP ${response.status}`);
+  const data = await response.json();
+  const parts = data?.candidates?.[0]?.content?.parts || [];
+  const text = parts.map((part) => String(part?.text || "")).join("").trim();
+  if (!text) throw new Error("Gemini вернул пустую расшифровку");
+  return text;
+}
+
 async function aiTranscribe(env, bytes, filename = "voice.ogg") {
+  if (isGemini(env)) return aiTranscribeGemini(env, bytes);
   const form = new FormData();
   form.append("file", new Blob([bytes], { type: "audio/ogg" }), filename);
   form.append("model", env.AI_MODEL || "gpt-4o-mini");
@@ -837,6 +882,54 @@ async function weeklyReport(env) {
   return lines.join("\n");
 }
 
+// --- дежурный агент: сам видит, что пора потрогать ----------------------
+
+async function agentDigest(env) {
+  const today = isoDateOnly();
+  const [c, documents, tasks] = await Promise.all([
+    counts(env),
+    getDocuments(env, { limit: 200 }),
+    getTasks(env, "open", 200),
+  ]);
+  const lines = [
+    `Такт · дежурный обзор · ${isoDateOnly().split("-").reverse().join(".")}`,
+    "",
+    `Счетов: ${c.documents} · ждут оплаты: ${c.unpaid} · просрочено: ${c.overdue}`,
+    `Открытых задач: ${c.open_tasks} · напоминаний в очереди: ${c.pending_reminders}`,
+  ];
+  const advice = [];
+  const overdueDocs = documents.filter(
+    (doc) => doc.due_date && doc.due_date < today && doc.status !== "paid"
+  );
+  if (overdueDocs.length) {
+    advice.push(`Напомнить по просроченным: ${overdueDocs.slice(0, 3).map((doc) => `#${pad4(doc.id)} ${doc.client_name}`).join(", ")}`);
+  }
+  const dueTasks = tasks.filter((task) => task.due_date && task.due_date <= today);
+  if (dueTasks.length) {
+    advice.push(`Закрыть задачи с сроком сегодня: ${dueTasks.slice(0, 3).map((task) => task.title).join(", ")}`);
+  }
+  if (!advice.length) advice.push("Рутина под контролем — ничего не горит.");
+  lines.push("", "Что сделать:", ...advice.map((item) => `• ${item}`));
+  return lines.join("\n");
+}
+
+async function runAgentDigest(env) {
+  const chats = await knownChats(env);
+  if (!chats.length) return 0;
+  const text = await agentDigest(env);
+  let sent = 0;
+  for (const chat of chats) {
+    try {
+      await sendTelegramMessage(env, chat, text);
+      sent += 1;
+    } catch {
+      // Один недоступный чат не должен ломать остальные.
+    }
+  }
+  if (sent) await logEvent(env, "agent.digest", `${sent} чат(ов)`);
+  return sent;
+}
+
 // --- Telegram ----------------------------------------------------------
 
 function normaliseChatId(value) {
@@ -973,6 +1066,7 @@ async function handleTelegramUpdate(env, update) {
   const chatId = message?.chat?.id;
   if (chatId === undefined || chatId === null) return;
   try {
+    await setSetting(env, `tg_chat:${chatId}`, "1");
     const text = String(message.text || message.caption || "");
     const command = text.trim().match(/^\/(\w+)(?:@[\w_]+)?\s*([\s\S]*)$/);
     if (command) {
@@ -1074,6 +1168,178 @@ function fileResponse(file) {
   });
 }
 
+// --- настоящий .xlsx без внешних библиотек (ZIP store + XML) --------------
+
+const CRC_TABLE = (() => {
+  const table = new Uint32Array(256);
+  for (let n = 0; n < 256; n += 1) {
+    let value = n;
+    for (let bit = 0; bit < 8; bit += 1) {
+      value = value & 1 ? 0xEDB88320 ^ (value >>> 1) : value >>> 1;
+    }
+    table[n] = value >>> 0;
+  }
+  return table;
+})();
+
+function crc32(bytes) {
+  let crc = 0xFFFFFFFF;
+  for (const byte of bytes) crc = CRC_TABLE[(crc ^ byte) & 0xFF] ^ (crc >>> 8);
+  return (crc ^ 0xFFFFFFFF) >>> 0;
+}
+
+function zipStore(files) {
+  const encoder = new TextEncoder();
+  const parts = [];
+  const central = [];
+  let offset = 0;
+  for (const file of files) {
+    const name = encoder.encode(file.name);
+    const data = file.data;
+    const crc = crc32(data);
+    const local = new Uint8Array(30 + name.length);
+    const localView = new DataView(local.buffer);
+    localView.setUint32(0, 0x04034B50, true);
+    localView.setUint16(4, 20, true);
+    localView.setUint16(6, 0, true);
+    localView.setUint16(8, 0, true);
+    localView.setUint32(14, crc, true);
+    localView.setUint32(18, data.length, true);
+    localView.setUint32(22, data.length, true);
+    localView.setUint16(26, name.length, true);
+    local.set(name, 30);
+    parts.push(local, data);
+
+    const directory = new Uint8Array(46 + name.length);
+    const directoryView = new DataView(directory.buffer);
+    directoryView.setUint32(0, 0x02014B50, true);
+    directoryView.setUint16(4, 20, true);
+    directoryView.setUint16(6, 20, true);
+    directoryView.setUint32(16, crc, true);
+    directoryView.setUint32(20, data.length, true);
+    directoryView.setUint32(24, data.length, true);
+    directoryView.setUint16(28, name.length, true);
+    directoryView.setUint32(42, offset, true);
+    directory.set(name, 46);
+    central.push(directory);
+    offset += local.length + data.length;
+  }
+  const centralSize = central.reduce((sum, entry) => sum + entry.length, 0);
+  const end = new Uint8Array(22);
+  const endView = new DataView(end.buffer);
+  endView.setUint32(0, 0x06054B50, true);
+  endView.setUint16(8, files.length, true);
+  endView.setUint16(10, files.length, true);
+  endView.setUint32(12, centralSize, true);
+  endView.setUint32(16, offset, true);
+  return new Blob([...parts, ...central, end], {
+    type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+  });
+}
+
+function xmlEscape(value) {
+  return String(value ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+}
+
+function columnName(index) {
+  let name = "";
+  let number = index + 1;
+  while (number > 0) {
+    number -= 1;
+    name = String.fromCharCode(65 + (number % 26)) + name;
+    number = Math.floor(number / 26);
+  }
+  return name;
+}
+
+function xlsxRows(doc) {
+  const rows = [
+    ["Такт — документ", "", ""],
+    ["Тип", doc.kind === "invoice" ? "Счёт и акт" : "Таблица", ""],
+    ["Номер", pad4(doc.id), ""],
+    ["Клиент", doc.client_name || "", ""],
+    ["Дата", doc.created_at || "", ""],
+    ["Срок оплаты", doc.due_date || "", ""],
+    ["Статус", doc.status || "", ""],
+    ["Сумма, ₽", Number(doc.amount || 0), ""],
+    ["", "", ""],
+  ];
+  const csv = String(doc.payload?.csv_text || "");
+  if (csv) {
+    rows.push(["Строки таблицы", "", ""]);
+    for (const line of csv.split(/\r?\n/).filter(Boolean)) {
+      rows.push(line.split(/[;|]/).map((cell) => cell.trim()));
+    }
+  }
+  return rows;
+}
+
+function documentXlsx(doc) {
+  const encoder = new TextEncoder();
+  const rows = xlsxRows(doc);
+  const sheetRows = rows.map((row, rowIndex) => {
+    const cells = row.map((value, columnIndex) => {
+      const reference = `${columnName(columnIndex)}${rowIndex + 1}`;
+      if (typeof value === "number" && Number.isFinite(value)) {
+        return `<c r="${reference}"><v>${value}</v></c>`;
+      }
+      return `<c r="${reference}" t="inlineStr"><is><t xml:space="preserve">${xmlEscape(value)}</t></is></c>`;
+    }).join("");
+    return `<row r="${rowIndex + 1}">${cells}</row>`;
+  }).join("");
+  const files = [
+    ["[Content_Types].xml", `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">
+<Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>
+<Default Extension="xml" ContentType="application/xml"/>
+<Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/>
+<Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>
+<Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/>
+</Types>`],
+    ["_rels/.rels", `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/>
+</Relationships>`],
+    ["xl/workbook.xml", `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">
+<sheets><sheet name="Такт" sheetId="1" r:id="rId1"/></sheets>
+</workbook>`],
+    ["xl/_rels/workbook.xml.rels", `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/>
+<Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/>
+</Relationships>`],
+    ["xl/styles.xml", `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">
+<fonts count="1"><font><sz val="11"/><name val="Calibri"/></font></fonts>
+<fills count="1"><fill><patternFill patternType="none"/></fill></fills>
+<borders count="1"><border/></borders>
+<cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs>
+<cellXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/></cellXfs>
+</styleSheet>`],
+    ["xl/worksheets/sheet1.xml", `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">
+<sheetData>${sheetRows}</sheetData>
+</worksheet>`],
+  ].map(([name, text]) => ({ name, data: encoder.encode(text) }));
+  return zipStore(files);
+}
+
+function xlsxResponse(doc) {
+  const name = `takt-${pad4(doc.id)}.xlsx`;
+  return new Response(documentXlsx(doc), {
+    status: 200,
+    headers: {
+      "Content-Type": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      "Content-Disposition": `attachment; filename="${name}"`,
+    },
+  });
+}
+
 async function readBody(request) {
   let parsed;
   try {
@@ -1142,6 +1408,13 @@ async function routeApi(request, env, url, path, method) {
     return fileResponse(file);
   }
 
+  match = path.match(/^\/api\/documents\/(\d+)\/export\.xlsx$/);
+  if (match && method === "GET") {
+    const doc = await getDocument(env, Number(match[1]));
+    if (!doc) return httpError(404, "Документ не найден");
+    return xlsxResponse(doc);
+  }
+
   match = path.match(/^\/api\/documents\/(\d+)\/download$/);
   if (match && method === "GET") {
     const doc = await getDocument(env, Number(match[1]));
@@ -1171,6 +1444,14 @@ async function routeApi(request, env, url, path, method) {
 
   if (path === "/api/reports/weekly" && method === "GET") {
     return json({ text: await weeklyReport(env) });
+  }
+
+  if (path === "/api/agent/digest" && method === "GET") {
+    return json({ text: await agentDigest(env), chats: await knownChats(env) });
+  }
+
+  if (path === "/api/agent/digest/send" && method === "POST") {
+    return json({ sent: await runAgentDigest(env) });
   }
 
   if (path === "/api/reminders/due" && method === "GET") {
@@ -1241,6 +1522,14 @@ export default {
       await flushReminders(env);
     } catch {
       // Никаких логов с токенами и секретами.
+    }
+    const now = new Date();
+    if (now.getUTCHours() === 9 && now.getUTCMinutes() < 5) {
+      try {
+        await runAgentDigest(env);
+      } catch {
+        // Утренний обзор не должен мешать напоминаниям.
+      }
     }
   },
 };

@@ -52,6 +52,7 @@ function renderDocuments(documents) {
       ? `<a class="linkbtn" href="/api/documents/${doc.id}/download?key=invoice_file" target="_blank">счёт ↗</a>
          <a class="linkbtn" href="/api/documents/${doc.id}/download?key=act_file" target="_blank">акт ↗</a>`
       : `<span class="card__meta">${escapeHtml(doc.payload?.rows ?? 0)} строк</span>`;
+    const excel = `<a class="linkbtn" href="/api/documents/${doc.id}/export.xlsx">Excel ↓</a>`;
     const pay = doc.kind === "invoice" && doc.status !== "paid"
       ? `<button class="linkbtn" data-paid="${doc.id}">отметить оплату</button>` : "";
     return `<article class="card">
@@ -63,7 +64,7 @@ function renderDocuments(documents) {
       <div class="card__right">
         <div class="card__amount">${money(doc.amount)}</div>
         <span class="pill pill--${pillClass}">${pillText}</span>
-        <div>${files}${pay}</div>
+        <div>${files}${excel}${pay}</div>
       </div>
     </article>`;
   }).join("");

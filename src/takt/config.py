@@ -16,8 +16,8 @@ class Config:
     bot_token: str = field(default_factory=lambda: os.getenv("TELEGRAM_BOT_TOKEN", ""))
     ai_base_url: str = field(default_factory=lambda: os.getenv("AI_BASE_URL", ""))
     ai_api_key: str = field(default_factory=lambda: os.getenv("AI_API_KEY", ""))
-    ai_model: str = field(default_factory=lambda: os.getenv("AI_MODEL", "gpt-4o-mini"))
-    ai_vision_model: str = field(default_factory=lambda: os.getenv("AI_VISION_MODEL", "gpt-4o-mini"))
+    ai_model: str = field(default_factory=lambda: os.getenv("AI_MODEL", ""))
+    ai_vision_model: str = field(default_factory=lambda: os.getenv("AI_VISION_MODEL", ""))
 
     def __post_init__(self) -> None:
         self.home = Path(self.home).expanduser()
@@ -30,6 +30,18 @@ class Config:
     @property
     def ai_enabled(self) -> bool:
         return bool(self.ai_base_url and self.ai_api_key)
+
+    @property
+    def is_gemini(self) -> bool:
+        return "generativelanguage.googleapis.com" in self.ai_base_url
+
+    @property
+    def model(self) -> str:
+        return self.ai_model or ("gemini-2.0-flash" if self.is_gemini else "gpt-4o-mini")
+
+    @property
+    def vision_model(self) -> str:
+        return self.ai_vision_model or self.model
 
     @property
     def bot_enabled(self) -> bool:
