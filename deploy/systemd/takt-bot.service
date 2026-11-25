@@ -1,0 +1,19 @@
+[Unit]
+Description=Такт — Telegram-бот
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=takt
+Group=takt
+WorkingDirectory=/opt/takt/app
+EnvironmentFile=/opt/takt/.env
+ExecStart=/opt/takt/venv/bin/python -m takt bot
+Restart=always
+RestartSec=5
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target

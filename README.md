@@ -73,10 +73,12 @@ src/takt/
   services.py    прикладная логика
   api.py         FastAPI + раздача веба
   bot.py         Telegram-бот
+  scheduler.py   планировщик напоминаний
   cli.py         консольная утилита
 web/             интерфейс без сборки: HTML, CSS, JS
 tests/           тесты парсера, логики и API
-docs/            продукт, архитектура, эксплуатация
+deploy/          systemd-юниты и скрипты деплоя/бэкапа
+docs/            продукт, архитектура, эксплуатация, деплой
 ```
 
-Подробности — в [docs/PRODUCT.md](docs/PRODUCT.md), [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md), [docs/OPERATIONS.md](docs/OPERATIONS.md).
+Подробности — в [docs/PRODUCT.md](docs/PRODUCT.md), [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md), [docs/OPERATIONS.md](docs/OPERATIONS.md), [docs/DEPLOY.md](docs/DEPLOY.md) и [docs/RUNBOOK.md](docs/RUNBOOK.md).

@@ -1,0 +1,7 @@
+# Не обязательно: при запуске с --token маршруты настраиваются в Cloudflare Dashboard.
+# Если используете config.yml, скопируйте этот файл в /opt/takt/.cloudflared/config.yml
+tunnel: <TUNNEL_UUID>
+ingress:
+  - hostname: takt.example.com
+    service: http://127.0.0.1:8765
+  - service: http_status:404

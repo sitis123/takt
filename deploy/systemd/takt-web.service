@@ -1,0 +1,20 @@
+[Unit]
+Description=Такт — веб-интерфейс и API
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=takt
+Group=takt
+WorkingDirectory=/opt/takt/app
+EnvironmentFile=/opt/takt/.env
+ExecStart=/opt/takt/venv/bin/uvicorn takt.api:app --host 127.0.0.1 --port 8765 --workers 1
+Restart=always
+RestartSec=3
+TimeoutStopSec=20
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target

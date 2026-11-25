@@ -35,6 +35,9 @@ def build_parser() -> argparse.ArgumentParser:
     serve.add_argument("--port", type=int, default=8765)
 
     subs.add_parser("bot", help="Запустить Telegram-бота")
+
+    scheduler = subs.add_parser("scheduler", help="Слать созревшие напоминания")
+    scheduler.add_argument("--interval", type=int, default=60)
     return parser
 
 
@@ -95,6 +98,11 @@ def main(argv: list[str] | None = None) -> None:
         from .bot import run_bot
 
         run_bot()
+        return
+    if args.command == "scheduler":
+        from .scheduler import main as scheduler_main
+
+        scheduler_main(args.interval)
         return
     if args.command == "serve":
         import uvicorn

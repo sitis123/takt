@@ -7,3 +7,8 @@ data/
 *.db
 *.db-wal
 *.db-shm
+deploy/cloudflared.yml
+deploy/*.pem
+deploy/id_*
+*.pem
+id_ed25519*

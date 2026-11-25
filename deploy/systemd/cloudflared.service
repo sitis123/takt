@@ -1,0 +1,18 @@
+[Unit]
+Description=Cloudflare Tunnel для Такта
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=takt
+Group=takt
+EnvironmentFile=/opt/takt/.env
+ExecStart=/usr/bin/cloudflared tunnel --no-autoupdate run --token ${CLOUDFLARE_TUNNEL_TOKEN}
+Restart=always
+RestartSec=5
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target
