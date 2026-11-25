@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Такт — администратор рутины</title>
+  <link rel="stylesheet" href="/web/styles.css">
+</head>
+<body>
+  <div class="grain" aria-hidden="true"></div>
+
+  <header class="topbar">
+    <div class="brand">
+      <span class="brand__mark">ТАКТ</span>
+      <span class="brand__note">тихий администратор рутины</span>
+    </div>
+    <div class="topbar__right">
+      <span class="pulse"><i></i> работает без тебя</span>
+      <button class="btn btn--ghost" id="report-btn">Отчёт за неделю</button>
+    </div>
+  </header>
+
+  <main class="layout">
+    <section class="rail" aria-label="Сводка">
+      <div class="rail__title">Сегодня</div>
+      <div class="stat stat--ink">
+        <span class="stat__num" id="stat-unpaid">—</span>
+        <span class="stat__label">ждут оплаты</span>
+        <span class="stat__hint" id="stat-overdue">просрочек нет</span>
+      </div>
+      <div class="stat stat--sage">
+        <span class="stat__num" id="stat-tasks">—</span>
+        <span class="stat__label">открытых задач</span>
+        <span class="stat__hint">записано и не забыто</span>
+      </div>
+      <div class="stat stat--gold">
+        <span class="stat__num" id="stat-docs">—</span>
+        <span class="stat__label">документов всего</span>
+        <span class="stat__hint">счета, акты, импорты</span>
+      </div>
+      <div class="rail__note" id="clock">—</div>
+    </section>
+
+    <section class="feed">
+      <div class="section-head">
+        <h1>Поток дел</h1>
+        <span class="section-head__meta" id="feed-meta">загружаем…</span>
+      </div>
+      <div class="cards" id="documents"></div>
+    </section>
+
+    <aside class="side">
+      <div class="section-head section-head--small">
+        <h2>Ритм</h2>
+        <span class="section-head__meta">напоминания и задачи</span>
+      </div>
+      <div class="rhythm" id="rhythm"></div>
+      <div class="events">
+        <div class="events__title">Что случилось только что</div>
+        <ol id="events"></ol>
+      </div>
+    </aside>
+  </main>
+
+  <section class="composer" aria-label="Быстрый ввод">
+    <div class="composer__inner">
+      <div class="modes" role="tablist">
+        <button class="mode is-active" data-mode="invoice" role="tab">Счёт и акт</button>
+        <button class="mode" data-mode="capture" role="tab">Таблица</button>
+        <button class="mode" data-mode="task" role="tab">Задача</button>
+      </div>
+      <div class="composer__row">
+        <textarea id="input" rows="2" placeholder="Вставь договор, переписку, таблицу или просто скажи, что нужно сделать…"></textarea>
+        <button class="btn btn--primary" id="submit">Отпустить <span>↵</span></button>
+      </div>
+      <div class="composer__foot">
+        <span id="hint">Ctrl+Enter — отправить · / — фокус</span>
+        <span id="status" aria-live="polite"></span>
+      </div>
+    </div>
+  </section>
+
+  <div class="drawer" id="drawer" hidden>
+    <div class="drawer__sheet">
+      <button class="drawer__close" id="drawer-close" aria-label="Закрыть">×</button>
+      <div class="drawer__title">Отчёт за неделю</div>
+      <pre id="report-text"></pre>
+    </div>
+  </div>
+
+  <div class="toast" id="toast" hidden></div>
+  <script src="/web/app.js"></script>
+</body>
+</html>
