@@ -11,6 +11,8 @@ concurrency:
 
 jobs:
   deploy:
+    # Пока секреты не добавлены, workflow не стартует и не даёт красных сборок.
+    if: ${{ vars.CLOUDFLARE_DEPLOY == 'true' }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
