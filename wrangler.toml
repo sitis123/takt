@@ -1,6 +1,6 @@
 name = "takt"
 main = "worker/dist/takt-worker.js"
-compatibility_date = "2026-11-26"
+compatibility_date = "2024-06-01"
 # Первичный вариант без домена: workers.dev. Домен можно добавить позже в Cloudflare Dashboard.
 
 [[d1_databases]]
