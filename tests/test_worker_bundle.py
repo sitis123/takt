@@ -31,6 +31,8 @@ def test_worker_bundle_contains_routes_schema_and_assets() -> None:
         "/api/agent/digest",
         "isGemini",
         "tg_chat:",
+        "data:image/svg+xml",
+        "win-controls",
     ):
         assert needle in bundle, f"В бандле нет: {needle}"
 
