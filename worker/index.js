@@ -1763,7 +1763,8 @@ export default {
         return new Response("ok", { status: 200, headers: { "Content-Type": "text/plain; charset=utf-8" } });
       }
 
-      if (path.startsWith("/api/")) return routeApi(request, env, url, path, method);
+      // await обязателен: иначе отказ routeApi уйдёт мимо catch ниже и даст 1101.
+      if (path.startsWith("/api/")) return await routeApi(request, env, url, path, method);
       return httpError(404, "Не найдено");
     } catch (error) {
       if (error instanceof HttpError) return httpError(error.status, error.detail);
