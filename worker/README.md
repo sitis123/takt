@@ -83,7 +83,7 @@ curl -X PUT "https://api.cloudflare.com/client/v4/accounts/$CF_ACCOUNT_ID/worker
 | `TELEGRAM_BOT_TOKEN` | secret | Токен бота; без него Telegram и напоминания не работают |
 | `TELEGRAM_WEBHOOK_SECRET` | secret | Если задан, webhook доступен только по `/telegram/<секрет>`; иначе `/telegram` |
 | `AI_BASE_URL`, `AI_API_KEY` | secret | Необязательно; включают AI-дообработку текста, фото и голос |
-| `AI_MODEL`, `AI_VISION_MODEL` | vars | Пусто → `gemini-2.0-flash` для Gemini, иначе `gpt-4o-mini` |
+| `AI_MODEL`, `AI_VISION_MODEL` | vars | Пусто → `gemini-3.5-flash-lite` для Gemini, иначе `gpt-4o-mini` |
 
 Токены и ключи не пишутся в логи.
 

@@ -23,8 +23,8 @@ def test_ai_disabled_without_key(tmp_path: Path) -> None:
     )
     assert not config.ai_enabled
     assert config.is_gemini
-    assert config.model == "gemini-2.0-flash"
-    assert config.vision_model == "gemini-2.0-flash"
+    assert config.model == "gemini-3.5-flash-lite"
+    assert config.vision_model == "gemini-3.5-flash-lite"
 
 
 def test_gemini_models_can_be_overridden(tmp_path: Path) -> None:

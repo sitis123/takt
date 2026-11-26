@@ -52,7 +52,7 @@ python -m takt reminders
 
 - `TAKT_HOME`, `TAKT_DB`, `TAKT_OUT` — каталог базы и файлов (по умолчанию `~/.takt`);
 - `TELEGRAM_BOT_TOKEN` — токен бота, `TELEGRAM_ALLOWED_CHAT_IDS` — необязательный белый список чатов;
-- `AI_BASE_URL`, `AI_API_KEY` — AI-провайдер; `AI_MODEL`/`AI_VISION_MODEL` оставьте пустыми, чтобы подставились дефолты (`gemini-2.0-flash` для Gemini, `gpt-4o-mini` иначе).
+- `AI_BASE_URL`, `AI_API_KEY` — AI-провайдер; `AI_MODEL`/`AI_VISION_MODEL` оставьте пустыми, чтобы подставились дефолты (`gemini-3.5-flash-lite` для Gemini, `gpt-4o-mini` иначе).
 
 Секреты читаются только из окружения, в базу и в файлы не попадают. Веб и API на `workers.dev` публичны: не храните в них конфиденциальные данные до ввода авторизации.
 

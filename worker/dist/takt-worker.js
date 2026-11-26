@@ -653,7 +653,7 @@ function isGemini(env) {
 
 function aiModel(env, kind = "chat") {
   const fallback = isGemini(env)
-    ? "gemini-2.0-flash"
+    ? "gemini-3.5-flash-lite"
     : "gpt-4o-mini";
   if (kind === "vision" && env.AI_VISION_MODEL) return String(env.AI_VISION_MODEL);
   if (kind === "chat" && env.AI_MODEL) return String(env.AI_MODEL);

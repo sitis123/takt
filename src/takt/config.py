@@ -45,7 +45,7 @@ class Config:
 
     @property
     def default_model(self) -> str:
-        return "gemini-2.0-flash" if self.is_gemini else "gpt-4o-mini"
+        return "gemini-3.5-flash-lite" if self.is_gemini else "gpt-4o-mini"
 
     @property
     def vision_model(self) -> str:
