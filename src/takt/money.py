@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from decimal import Decimal, ROUND_HALF_UP
+from decimal import Decimal, InvalidOperation, ROUND_HALF_UP
 
 _ONES = (
     "",
@@ -24,14 +24,17 @@ _ONES = (
     "восемнадцать",
     "девятнадцать",
 )
+_ONES_FEMININE = ("", "одна", "две") + _ONES[3:]
 _TENS = ("", "", "двадцать", "тридцать", "сорок", "пятьдесят", "шестьдесят", "семьдесят", "восемьдесят", "девяносто")
 _HUNDREDS = ("", "сто", "двести", "триста", "четыреста", "пятьсот", "шестьсот", "семьсот", "восемьсот", "девятьсот")
 
 
 def normalise(value: float | int | str | Decimal) -> Decimal:
-    return Decimal(str(value).replace(" ", "").replace("\u00a0", "").replace(",", ".")).quantize(
-        Decimal("0.01"), rounding=ROUND_HALF_UP
-    )
+    try:
+        raw = str(value).replace(" ", "").replace("\u00a0", "").replace(",", ".")
+        return Decimal(raw).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+    except (InvalidOperation, ValueError, TypeError):
+        return Decimal("0.00")
 
 
 def money(value: float | int | str | Decimal, currency: str = "₽") -> str:
@@ -39,19 +42,20 @@ def money(value: float | int | str | Decimal, currency: str = "₽") -> str:
     return f"{amount:,.2f}".replace(",", " ").replace(".", ",") + f" {currency}"
 
 
-def _under_thousand(number: int) -> str:
+def _under_thousand(number: int, feminine: bool = False) -> str:
     parts = []
+    ones = _ONES_FEMININE if feminine else _ONES
     hundreds, rest = divmod(number, 100)
     if hundreds:
         parts.append(_HUNDREDS[hundreds])
     if rest < 20:
         if rest:
-            parts.append(_ONES[rest])
+            parts.append(ones[rest])
     else:
-        tens, ones = divmod(rest, 10)
+        tens, last = divmod(rest, 10)
         parts.append(_TENS[tens])
-        if ones:
-            parts.append(_ONES[ones])
+        if last:
+            parts.append(ones[last])
     return " ".join(parts)
 
 
@@ -69,16 +73,31 @@ def _plural(number: int, one: str, few: str, many: str) -> str:
 def rubles_in_words(value: float | int | str | Decimal) -> str:
     """Человеческая сумма для печатной формы документа."""
     amount = normalise(value)
-    rubles = int(amount)
-    kopecks = int((amount - rubles) * 100)
-    words = []
-    thousands, rest = divmod(rubles, 1000)
-    millions, thousands = divmod(thousands, 1000)
-    if millions:
-        words.append(f"{_under_thousand(millions)} {_plural(millions, 'миллион', 'миллиона', 'миллионов')}")
-    if thousands:
-        words.append(f"{_under_thousand(thousands)} {_plural(thousands, 'тысяча', 'тысячи', 'тысяч')}")
+    rubles = int(abs(amount))
+    kopecks = int((abs(amount) - rubles) * 100)
+
+    billions, rest = divmod(rubles, 1_000_000_000)
+    millions, rest = divmod(rest, 1_000_000)
+    thousands, units = divmod(rest, 1000)
+
+    words: list[str] = []
+    for count, forms in (
+        (billions, ("миллиард", "миллиарда", "миллиардов")),
+        (millions, ("миллион", "миллиона", "миллионов")),
+        (thousands, ("тысяча", "тысячи", "тысяч")),
+    ):
+        if count:
+            words.append(f"{_under_thousand(count, feminine=forms[0] == 'тысяча')} {_plural(count, *forms)}")
+
     ruble_form = _plural(rubles, "рубль", "рубля", "рублей")
-    words.append(f"{_under_thousand(rest)} {ruble_form}" if rest else ruble_form)
+    if rubles == 0 and not words:
+        words.append("ноль рублей")
+    elif units or not words:
+        prefix = _under_thousand(units)
+        words.append(f"{prefix} {ruble_form}" if prefix else ruble_form)
+    else:
+        words.append(ruble_form)
     words.append(f"{kopecks:02d} {_plural(kopecks, 'копейка', 'копейки', 'копеек')}")
-    return " ".join(w for w in words if w.strip()).capitalize()
+
+    result = " ".join(word for word in words if word.strip())
+    return ("минус " + result).capitalize() if amount < 0 else result.capitalize()

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import os
 from dataclasses import dataclass, field
+from urllib.parse import urlparse
 from functools import lru_cache
 from pathlib import Path
 
@@ -33,15 +34,22 @@ class Config:
 
     @property
     def is_gemini(self) -> bool:
-        return "generativelanguage.googleapis.com" in self.ai_base_url
+        host = (urlparse(self.ai_base_url).hostname or "").lower()
+        return host == "generativelanguage.googleapis.com" or host.endswith(
+            ".generativelanguage.googleapis.com"
+        )
 
     @property
     def model(self) -> str:
-        return self.ai_model or ("gemini-2.0-flash" if self.is_gemini else "gpt-4o-mini")
+        return self.ai_model or self.default_model
+
+    @property
+    def default_model(self) -> str:
+        return "gemini-2.0-flash" if self.is_gemini else "gpt-4o-mini"
 
     @property
     def vision_model(self) -> str:
-        return self.ai_vision_model or self.model
+        return self.ai_vision_model or self.default_model
 
     @property
     def bot_enabled(self) -> bool:

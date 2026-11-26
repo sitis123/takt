@@ -20,11 +20,11 @@ python -m takt serve
 
 Откройте <http://127.0.0.1:8765/>.
 
-Рабочий облачный контур: <https://takt.gwsuite.workers.dev/>. Обновления в `main` автоматически выкатываются через GitHub Actions; инструкция — в [docs/DEPLOY.md](docs/DEPLOY.md).
+Рабочий облачный контур: <https://takt.gwsuite.workers.dev/>. Обновления в `main` автоматически выкатываются workflow `Deploy to Cloudflare` (при `CLOUDFLARE_DEPLOY=true`); старый SSH-workflow `Deploy` не используется. Инструкция — в [docs/DEPLOY.md](docs/DEPLOY.md).
 
 Оформление веба — глянцевый Frutiger Aero / старый Web 2.0: стеклянные панели, пузыри, синий воздух и мягкие нажимы. Всё на CSS, без внешних картинок и шрифтов.
 
-Без AI-ключа всё работает на локальном парсере: он достаёт клиента, ИНН, сумму и дату из текста. С ключом Gemini (`AI_BASE_URL=https://generativelanguage.googleapis.com/v1beta/openai`) включаются фото→CSV, голос→задача и умный разбор договора. Документы можно скачать в HTML и настоящем `.xlsx`; дежурный агент раз в день сам присылает обзор просрочек и задач.
+Без AI-ключа всё работает на локальном парсере: он достаёт клиента, ИНН, сумму и дату из текста. С ключом Gemini (`AI_BASE_URL=https://generativelanguage.googleapis.com/v1beta/openai`) включаются фото→CSV, голос→задача и умный разбор договора. Документы можно скачать в HTML и настоящем `.xlsx`; дежурный агент раз в день присылает короткий обзор. Недельный отчёт доступен по `/report` и `GET /api/reports/weekly`.
 
 ### Telegram-бот
 
@@ -33,7 +33,7 @@ $env:TELEGRAM_BOT_TOKEN = "токен от @BotFather"
 python -m takt bot
 ```
 
-Команды: `/invoice`, `/capture`, `/task`, `/status`, `/report`, `/paid <номер>`. Фото распознаётся как таблица, голос — как задача.
+Команды: `/start`, `/help`, `/invoice`, `/capture`, `/task`, `/status`, `/report`, `/paid <номер>`. Фото распознаётся как таблица, голос — как задача. Один раз напишите `/status`: это включит чат в ежедневный обзор и напоминания.
 
 ### Утилита
 
@@ -48,14 +48,13 @@ python -m takt reminders
 
 ## Настройка
 
-Скопируйте `.env.example` в `.env` и заполните при необходимости:
+`.env.example` — шпаргалка: файл `.env` сам по себе не читается. Задавайте переменные через окружение PowerShell (`$env:AI_API_KEY="..."`) либо через GitHub Secrets для облака:
 
-- `TAKT_HOME` — каталог базы и сгенерированных файлов (по умолчанию `~/.takt`);
-- `TELEGRAM_BOT_TOKEN` — токен бота;
-- `AI_BASE_URL`, `AI_API_KEY`, `AI_MODEL`, `AI_VISION_MODEL` — AI-провайдер; для Gemini достаточно двух первых, модели подставятся автоматически (`gemini-2.0-flash`);
-- `TAKT_WEB_ORIGIN` — публичный адрес веба.
+- `TAKT_HOME`, `TAKT_DB`, `TAKT_OUT` — каталог базы и файлов (по умолчанию `~/.takt`);
+- `TELEGRAM_BOT_TOKEN` — токен бота, `TELEGRAM_ALLOWED_CHAT_IDS` — необязательный белый список чатов;
+- `AI_BASE_URL`, `AI_API_KEY` — AI-провайдер; `AI_MODEL`/`AI_VISION_MODEL` оставьте пустыми, чтобы подставились дефолты (`gemini-2.0-flash` для Gemini, `gpt-4o-mini` иначе).
 
-Секреты читаются только из окружения, в базу и в файлы не попадают.
+Секреты читаются только из окружения, в базу и в файлы не попадают. Веб и API на `workers.dev` публичны: не храните в них конфиденциальные данные до ввода авторизации.
 
 ## Тесты
 
@@ -77,11 +76,12 @@ src/takt/
   services.py    прикладная логика
   api.py         FastAPI + раздача веба
   bot.py         Telegram-бот
-  scheduler.py   планировщик напоминаний
+  scheduler.py   планировщик напоминаний и дайджеста
+  xlsx.py        генерация настоящего .xlsx
   cli.py         консольная утилита
 web/             интерфейс без сборки: HTML, CSS, JS
 tests/           тесты парсера, логики и API
-deploy/          systemd-юниты и скрипты деплоя/бэкапа
+deploy/          архивный VPS-вариант (не используется в Cloudflare-контуре)
 docs/            продукт, архитектура, эксплуатация, деплой
 ```
 

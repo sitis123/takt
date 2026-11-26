@@ -244,6 +244,30 @@ class Store:
     def mark_reminder_sent(self, reminder_id: int) -> None:
         self.execute("UPDATE reminders SET sent_at = ? WHERE id = ?", (now_iso(), reminder_id))
 
+    def claim_reminder(self, reminder_id: int) -> bool:
+        """Атомарно резервирует напоминание: два воркера не отправят одно и то же."""
+        cur = self.execute(
+            "UPDATE reminders SET sent_at = ? WHERE id = ? AND sent_at IS NULL",
+            (now_iso(), reminder_id),
+        )
+        return cur.rowcount > 0
+
+    def release_reminder(self, reminder_id: int) -> None:
+        self.execute("UPDATE reminders SET sent_at = NULL WHERE id = ?", (reminder_id,))
+
+    def cancel_reminders(self, kind: str, ref_id: int) -> int:
+        """Отменяет ещё не отправленные напоминания, например после оплаты счёта."""
+        cur = self.execute(
+            "UPDATE reminders SET sent_at = ? WHERE kind = ? AND ref_id = ? AND sent_at IS NULL",
+            (now_iso(), kind, ref_id),
+        )
+        return max(cur.rowcount, 0)
+
+    def pending_reminders(self, limit: int = 50) -> list[dict[str, Any]]:
+        return self.all(
+            "SELECT * FROM reminders WHERE sent_at IS NULL ORDER BY due_at LIMIT ?", (limit,)
+        )
+
     # --- служебное -----------------------------------------------------
     def log_event(self, kind: str, detail: str) -> None:
         self.execute(
@@ -262,6 +286,12 @@ class Store:
             "INSERT INTO settings(key, value) VALUES (?,?) ON CONFLICT(key) DO UPDATE SET value = excluded.value",
             (key, value),
         )
+
+    def delete_setting(self, key: str) -> None:
+        self.execute("DELETE FROM settings WHERE key = ?", (key,))
+
+    def settings(self) -> dict[str, str]:
+        return {row["key"]: row["value"] for row in self.all("SELECT key, value FROM settings")}
 
     def counts(self) -> dict[str, int]:
         return {

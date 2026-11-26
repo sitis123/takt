@@ -1,64 +1,31 @@
 # Эксплуатация
 
-## Локальный запуск
+## Рабочий контур
+
+- Прод: Cloudflare Worker `takt`, D1 `takt-db`, cron `*/5 * * * *`, адрес `https://takt.gwsuite.workers.dev/`.
+- Обновление: `git push` в `main` → зелёный run `Deploy to Cloudflare` → проверка `/api/health`.
+- Веб и `/api/*` на `workers.dev` публичны и без авторизации. Админ-роуты (`agent`, `settings`, `reminders`) защищены токеном. Не храните конфиденциальные данные до ввода полноценной авторизации.
+- Telegram-бот отвечает любому чату, если не задан `TELEGRAM_ALLOWED_CHAT_IDS`; в дайджест попадают только чаты, написавшие `/start` или `/status`.
+
+## Локальный режим
 
 ```powershell
-python -m pip install -e .
 $env:PYTHONPATH = "src"
 python -m takt init
-python -m takt serve --host 127.0.0.1 --port 8765
+python -m takt serve
+python -m takt scheduler --interval 60
 ```
 
-Бот поднимается отдельно:
+Планировщик отправляет созревшие напоминания и один раз в день короткий обзор. Чат напоминаний локально хранится в `$TAKT_HOME/notify_chat_id`; в Worker — в таблице `settings` (`POST /api/settings`).
 
-```powershell
-$env:TELEGRAM_BOT_TOKEN = "..."
-python -m takt bot
-```
+## Данные и безопасность
 
-Напоминания отправляет планировщик:
-
-```powershell
-python -c "from takt.config import get_config; from takt.services import Takt; from takt.bot import notify; print(Takt(get_config()).flush_reminders(notify))"
-```
-
-Для этого в `~/.takt/notify_chat_id` должен лежать chat id, куда слать уведомления.
-
-## Сервер
-
-Минимальный набор: VPS с Python 3.11, домен, HTTPS-прокси (Nginx/Caddy), два service-процесса — веб и планировщик. Telegram-бот работает через long polling и не требует публичного webhook.
-
-Переменные окружения задаются systemd `Environment=` или файлом окружения с restrictive правами. Ни в коем случае не коммитьте `.env`.
-
-## Бэкапы
-
-База — один файл `~/.takt/takt.db` в режиме WAL. Резервная копия:
-
-```powershell
-python -c "import sqlite3; c=sqlite3.connect(r'C:\Users\eshar\.takt\takt.db'); c.backup(sqlite3.connect('backup.db'))"
-```
-
-Копируйте также каталог `~/.takt/out` — там сгенерированные счета, акты и CSV. Достаточно ежедневной копии и хранения последних 30 дней.
+- Схема создаётся лениво (`CREATE TABLE IF NOT EXISTS`); при изменении структуры нужна ручная миграция/пересоздание D1.
+- SQL-запросы параметризованы; пользовательский текст экранируется в HTML и XML; CSV/XLSX защищены от формульных инъекций.
+- Секреты хранятся в GitHub Secrets и Worker env, в базу и логи не попадают.
+- Данные уходят в Telegram и, при включении AI, выбранному провайдеру. Без AI работает локальный парсер.
+- Резервная копия D1 в репозитории не настроена; при необходимости используйте экспорт D1 через Cloudflare Dashboard.
 
 ## Проверки
 
-- `python -m pytest` — основная проверка перед обновлением;
-- `GET /api/health` — простой healthcheck для мониторинга;
-- журнал `events` в базе — что происходит внутри продукта;
-- просроченные документы и ожидающие напоминания видны в `/api/overview`.
-
-## Обновление
-
-1. Сделать бэкап базы и `out/`.
-2. Обновить код, прогнать тесты.
-3. Перезапустить веб, бота и планировщик.
-4. Проверить `/api/health` и один тестовый счёт.
-
-Схема базы версионируется через `CREATE TABLE IF NOT EXISTS`; на этом этапе миграций не требуется.
-
-## Безопасность
-
-- Секреты только в окружении.
-- Пользовательские данные не уходят никуда, пока не настроен AI-провайдер; при включённом AI текст документа уходит выбранному провайдеру — это нужно честно отразить в политике.
-- Telegram-бот принимает файлы только от авторизованных пользователей: при выходе в продакшн добавьте whitelist chat id.
-- Доступ к веб-панели на сервере закрывается прокси и авторизацией.
+См. [RUNBOOK.md](RUNBOOK.md): health, веб, последний деплой, webhook, секреты, админ-роуты.

@@ -1,6 +1,6 @@
 # Такт на Cloudflare Workers
 
-Порт продукта «Такт» в один JS-файл без npm-зависимостей. Исходная логика (`src/takt/*.py`) и фронтенд (`web/`) не изменяются: worker встраивает HTML/CSS/JS в бандл на этапе сборки.
+Порт продукта «Такт» в один JS-файл без npm-зависимостей. Логика продублирована из `src/takt/*.py`; общий фронтенд `web/` встраивается в бандл. После изменений `web/` или `worker/index.js` пересобирайте бандл: `python scripts/build_worker.py`.
 
 ## 1. Сборка
 
@@ -33,7 +33,7 @@ npx wrangler d1 create takt-db
 ```toml
 name = "takt"
 main = "worker/dist/takt-worker.js"
-compatibility_date = "2026-11-01"
+compatibility_date = "2024-06-01"
 
 [[d1_databases]]
 binding = "DB"
@@ -41,7 +41,7 @@ database_name = "takt-db"
 database_id = "<UUID из вывода wrangler d1 create>"
 
 [triggers]
-crons = ["* * * * *"]   # scheduled(): раз в минуту
+crons = ["*/5 * * * *"] # scheduled(): напоминания; дайджест в 09:00 UTC
 ```
 
 Через API можно создать базу так:
@@ -83,7 +83,7 @@ curl -X PUT "https://api.cloudflare.com/client/v4/accounts/$CF_ACCOUNT_ID/worker
 | `TELEGRAM_BOT_TOKEN` | secret | Токен бота; без него Telegram и напоминания не работают |
 | `TELEGRAM_WEBHOOK_SECRET` | secret | Если задан, webhook доступен только по `/telegram/<секрет>`; иначе `/telegram` |
 | `AI_BASE_URL`, `AI_API_KEY` | secret | Необязательно; включают AI-дообработку текста, фото и голос |
-| `AI_MODEL`, `AI_VISION_MODEL` | vars | По умолчанию `gpt-4o-mini` |
+| `AI_MODEL`, `AI_VISION_MODEL` | vars | Пусто → `gemini-2.0-flash` для Gemini, иначе `gpt-4o-mini` |
 
 Токены и ключи не пишутся в логи.
 
@@ -109,6 +109,8 @@ curl -X POST "https://api.telegram.org/bot<TELEGRAM_BOT_TOKEN>/setWebhook" \
 
 ## 6. Маршруты
 
-`GET /api/health`, `GET /api/overview`, `GET /api/documents?limit&status&kind`, `POST /api/invoices`, `POST /api/documents/:id/paid`, `GET /api/documents/:id/file?kind=invoice|act`, `GET /api/documents/:id/download?key=...`, `POST /api/capture`, `POST /api/tasks`, `POST /api/tasks/:id/done`, `GET /api/reports/weekly`, `GET /api/reminders/due`, `POST /api/reminders/flush`, `GET|POST /api/settings`.
+`GET /api/health`, `GET /api/overview`, `GET /api/documents?limit&status&kind`, `POST /api/invoices`, `POST /api/documents/:id/paid`, `GET /api/documents/:id/file?kind=invoice|act`, `GET /api/documents/:id/download?key=...`, `GET /api/documents/:id/export.xlsx`, `POST /api/capture`, `POST /api/tasks`, `POST /api/tasks/:id/done`, `GET /api/reports/weekly`, `GET /api/reminders/due`, `POST /api/reminders/flush`, `GET|POST /api/settings`, `GET /api/agent/digest`, `POST /api/agent/digest/send?force=1`.
+
+Админ-роуты (`agent`, `settings`, `reminders`) требуют `Authorization: Bearer <TAKT_ADMIN_TOKEN>`; при отсутствии отдельного токена используется `TELEGRAM_WEBHOOK_SECRET`.
 
 Статика: `/` → 302 `/web/`, затем `/web/`, `/web/styles.css`, `/web/app.js` — из встроенных ассетов. Ошибки — JSON `{"detail": "..."}` со статусами 400/404/422.

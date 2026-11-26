@@ -1,4 +1,4 @@
-const ASSETS = {"index.html": "<!doctype html>\n<html lang=\"ru\">\n<head>\n  <meta charset=\"utf-8\">\n  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">\n  <title>Такт — администратор рутины</title>\n  <link rel=\"icon\" href=\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cdefs%3E%3CradialGradient id='g' cx='35%25' cy='28%25'%3E%3Cstop offset='0' stop-color='%23ffffff'/%3E%3Cstop offset='.45' stop-color='%23bfe9ff'/%3E%3Cstop offset='1' stop-color='%230c6fa6'/%3E%3C/radialGradient%3E%3C/defs%3E%3Ccircle cx='32' cy='32' r='29' fill='url(%23g)'/%3E%3Cellipse cx='23' cy='19' rx='10' ry='6' fill='%23ffffff' opacity='.85' transform='rotate(-25 23 19)'/%3E%3C/svg%3E\">\n  <link rel=\"stylesheet\" href=\"/web/styles.css\">\n</head>\n<body>\n  <div class=\"sky\" aria-hidden=\"true\"></div>\n  <div class=\"grain\" aria-hidden=\"true\"></div>\n\n  <header class=\"topbar\">\n    <div class=\"brand\">\n      <span class=\"brand__orb\" aria-hidden=\"true\"></span>\n      <span class=\"brand__text\">\n        <span class=\"brand__mark\">ТАКТ</span>\n        <span class=\"brand__note\">тихий администратор рутины</span>\n      </span>\n    </div>\n    <div class=\"topbar__right\">\n      <span class=\"win-controls\" aria-hidden=\"true\"><i></i><i></i><i></i></span>\n      <span class=\"pulse\"><i></i> работает без тебя</span>\n      <button class=\"btn btn--ghost\" id=\"report-btn\">Отчёт за неделю</button>\n    </div>\n  </header>\n\n  <main class=\"layout\">\n    <section class=\"rail\" aria-label=\"Сводка\">\n      <div class=\"rail__title\">Сегодня</div>\n      <div class=\"stat stat--ink\">\n        <span class=\"stat__num\" id=\"stat-unpaid\">—</span>\n        <span class=\"stat__label\">ждут оплаты</span>\n        <span class=\"stat__hint\" id=\"stat-overdue\">просрочек нет</span>\n      </div>\n      <div class=\"stat stat--sage\">\n        <span class=\"stat__num\" id=\"stat-tasks\">—</span>\n        <span class=\"stat__label\">открытых задач</span>\n        <span class=\"stat__hint\">записано и не забыто</span>\n      </div>\n      <div class=\"stat stat--gold\">\n        <span class=\"stat__num\" id=\"stat-docs\">—</span>\n        <span class=\"stat__label\">документов всего</span>\n        <span class=\"stat__hint\">счета, акты, импорты</span>\n      </div>\n      <div class=\"rail__note\" id=\"clock\">—</div>\n    </section>\n\n    <section class=\"feed\">\n      <div class=\"section-head\">\n        <h1>Поток дел</h1>\n        <span class=\"section-head__meta\" id=\"feed-meta\">загружаем…</span>\n      </div>\n      <div class=\"cards\" id=\"documents\"></div>\n    </section>\n\n    <aside class=\"side\">\n      <div class=\"section-head section-head--small\">\n        <h2>Ритм</h2>\n        <span class=\"section-head__meta\">напоминания и задачи</span>\n      </div>\n      <div class=\"rhythm\" id=\"rhythm\"></div>\n      <div class=\"events\">\n        <div class=\"events__title\">Что случилось только что</div>\n        <ol id=\"events\"></ol>\n      </div>\n    </aside>\n  </main>\n\n  <section class=\"composer\" aria-label=\"Быстрый ввод\">\n    <div class=\"composer__inner\">\n      <div class=\"modes\" role=\"tablist\">\n        <button class=\"mode is-active\" data-mode=\"invoice\" role=\"tab\">Счёт и акт</button>\n        <button class=\"mode\" data-mode=\"capture\" role=\"tab\">Таблица</button>\n        <button class=\"mode\" data-mode=\"task\" role=\"tab\">Задача</button>\n      </div>\n      <div class=\"composer__row\">\n        <textarea id=\"input\" rows=\"2\" placeholder=\"Вставь договор, переписку, таблицу или просто скажи, что нужно сделать…\"></textarea>\n        <button class=\"btn btn--primary\" id=\"submit\">Отпустить <span>↵</span></button>\n      </div>\n      <div class=\"composer__foot\">\n        <span id=\"hint\">Ctrl+Enter — отправить · / — фокус</span>\n        <span id=\"status\" aria-live=\"polite\"></span>\n      </div>\n    </div>\n  </section>\n\n  <div class=\"drawer\" id=\"drawer\" hidden>\n    <div class=\"drawer__sheet\">\n      <button class=\"drawer__close\" id=\"drawer-close\" aria-label=\"Закрыть\">×</button>\n      <div class=\"drawer__title\">Отчёт за неделю</div>\n      <pre id=\"report-text\"></pre>\n    </div>\n  </div>\n\n  <div class=\"toast\" id=\"toast\" hidden></div>\n  <script src=\"/web/app.js\"></script>\n</body>\n</html>\n", "styles.css": "/* Такт — Frutiger Aero / старый добрый Web 2.0.\n   Стекло, глянец, пузыри, мягкий синий воздух — без лишнего шума. */\n\n:root {\n  --sea: #0c6fa6;\n  --sea-deep: #064c77;\n  --sea-soft: #4aa9d8;\n  --ice: #f4fbff;\n  --sky: #cfeaff;\n  --lime: #8dc63f;\n  --amber: #ffb544;\n  --coral: #ff7d5c;\n  --ink: #0b3f60;\n  --muted: #4f7b98;\n  --rule: rgba(18, 105, 155, .18);\n  --glass: linear-gradient(145deg, rgba(255, 255, 255, .96), rgba(224, 243, 255, .82) 45%, rgba(176, 219, 245, .7));\n  --glass-line: rgba(255, 255, 255, .92);\n  --shadow: 0 16px 32px -16px rgba(4, 55, 88, .6);\n  --spring: cubic-bezier(.18, .89, .32, 1.28);\n}\n\n* { box-sizing: border-box; }\n\nhtml, body { min-height: 100%; }\n\nbody {\n  margin: 0;\n  padding-bottom: 210px;\n  color: var(--ink);\n  font: 14px/1.55 \"Segoe UI\", Tahoma, Verdana, sans-serif;\n  background:\n    radial-gradient(circle at 12% 4%, rgba(255, 255, 255, .95) 0 5%, transparent 26%),\n    radial-gradient(circle at 86% 16%, rgba(146, 223, 255, .6), transparent 30%),\n    radial-gradient(circle at 48% 100%, rgba(144, 205, 241, .85), transparent 58%),\n    linear-gradient(180deg, #eaf9ff 0%, #d8f0ff 42%, #c2e5fa 100%);\n  -webkit-font-smoothing: antialiased;\n}\n\n/* Пузыри и зерно — декоративный фон, ничего не ловят. */\n.sky {\n  position: fixed;\n  inset: 0;\n  z-index: 0;\n  overflow: hidden;\n  pointer-events: none;\n}\n.sky::before {\n  content: \"\";\n  position: absolute;\n  inset: -18%;\n  background:\n    radial-gradient(circle at 9% 14%, #fff 0 3px, rgba(255, 255, 255, .72) 9px, rgba(75, 169, 218, .22) 19px, transparent 20px),\n    radial-gradient(circle at 27% 68%, #fff 0 4px, rgba(255, 255, 255, .65) 12px, rgba(75, 169, 218, .18) 25px, transparent 26px),\n    radial-gradient(circle at 63% 18%, #fff 0 2px, rgba(255, 255, 255, .6) 8px, rgba(75, 169, 218, .2) 17px, transparent 18px),\n    radial-gradient(circle at 78% 76%, #fff 0 5px, rgba(255, 255, 255, .6) 14px, rgba(75, 169, 218, .16) 29px, transparent 30px),\n    radial-gradient(circle at 94% 42%, #fff 0 3px, rgba(255, 255, 255, .55) 10px, rgba(75, 169, 218, .15) 21px, transparent 22px);\n  opacity: .85;\n  animation: drift 26s ease-in-out infinite alternate;\n}\n.sky::after {\n  content: \"\";\n  position: absolute;\n  right: -90px;\n  top: 12%;\n  width: 260px;\n  height: 260px;\n  border-radius: 50%;\n  background: radial-gradient(circle at 34% 28%, rgba(255, 255, 255, .96), rgba(255, 255, 255, .35) 30%, rgba(66, 164, 214, .25) 68%, transparent 72%);\n  box-shadow: inset -18px -22px 40px rgba(14, 89, 134, .18), inset 12px 14px 26px rgba(255, 255, 255, .9);\n  animation: hover 12s ease-in-out infinite;\n}\n@keyframes drift {\n  from { transform: translate3d(0, 0, 0); }\n  to { transform: translate3d(-28px, 32px, 0); }\n}\n@keyframes hover {\n  0%, 100% { transform: translateY(0) scale(1); }\n  50% { transform: translateY(-22px) scale(1.04); }\n}\n\n.grain {\n  position: fixed;\n  inset: 0;\n  z-index: 12;\n  pointer-events: none;\n  opacity: .14;\n  background-image: url(\"data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.4'/%3E%3C/svg%3E\");\n}\n\n/* Верхняя панель — глянцевая, как старый системный заголовок. */\n.topbar {\n  position: relative;\n  z-index: 3;\n  display: flex;\n  align-items: center;\n  justify-content: space-between;\n  gap: 24px;\n  padding: 22px clamp(20px, 4vw, 64px) 18px;\n  border-bottom: 1px solid rgba(255, 255, 255, .9);\n  background: linear-gradient(180deg, rgba(255, 255, 255, .8), rgba(255, 255, 255, .22));\n  box-shadow: 0 1px 0 rgba(10, 90, 140, .22), 0 12px 30px -22px rgba(6, 70, 110, .7);\n  backdrop-filter: blur(8px);\n}\n\n.brand { display: flex; align-items: center; gap: 14px; }\n.brand__text { display: flex; flex-direction: column; gap: 2px; }\n.brand__orb {\n  position: relative;\n  flex: none;\n  width: 54px;\n  height: 54px;\n  border-radius: 50%;\n  background: radial-gradient(circle at 34% 26%, #fff 0 8%, #c8edff 24%, #35a9dc 58%, #0a6da6 100%);\n  box-shadow: inset -6px -8px 16px rgba(0, 61, 100, .38), inset 5px 6px 12px rgba(255, 255, 255, .95), 0 9px 20px -8px rgba(8, 83, 130, .75);\n  animation: hover 9s ease-in-out infinite;\n}\n.brand__orb::after {\n  content: \"\";\n  position: absolute;\n  left: 13%;\n  top: 10%;\n  width: 38%;\n  height: 22%;\n  border-radius: 50%;\n  background: rgba(255, 255, 255, .9);\n  filter: blur(2px);\n  transform: rotate(-24deg);\n}\n.brand__mark {\n  font: 700 30px/1 \"Trebuchet MS\", \"Segoe UI\", sans-serif;\n  letter-spacing: .16em;\n  color: #0a6296;\n  text-shadow: 0 1px 0 #fff, 0 -1px 0 rgba(4, 66, 105, .4);\n}\n.brand__note {\n  font: 10px/1.2 Tahoma, Verdana, sans-serif;\n  letter-spacing: .14em;\n  text-transform: uppercase;\n  color: var(--muted);\n}\n\n.topbar__right { display: flex; align-items: center; gap: 18px; }\n.win-controls { display: flex; gap: 6px; }\n.win-controls i {\n  position: relative;\n  width: 22px; height: 20px;\n  border: 1px solid rgba(255, 255, 255, .9);\n  border-radius: 5px;\n  background: linear-gradient(180deg, #fff 0%, #d9f1ff 44%, #78bbe3 52%, #4e9ecd 100%);\n  box-shadow: inset 0 1px 0 #fff, inset 0 -2px 3px rgba(9, 88, 137, .25), 0 2px 0 rgba(10, 90, 140, .35);\n}\n.win-controls i::after {\n  position: absolute;\n  left: 0; right: 0; top: 4px;\n  text-align: center;\n  font: 700 10px/1 Tahoma, sans-serif;\n  color: #0a6296;\n  text-shadow: 0 1px 0 #fff;\n}\n.win-controls i:nth-child(1)::after { content: \"_\"; }\n.win-controls i:nth-child(2)::after { content: \"□\"; font-size: 9px; }\n.win-controls i:nth-child(3)::after { content: \"×\"; font-size: 13px; color: #b3472f; }\n.pulse {\n  display: inline-flex;\n  align-items: center;\n  gap: 9px;\n  padding: 7px 12px;\n  border-radius: 999px;\n  font-size: 11px;\n  color: #176487;\n  background: linear-gradient(180deg, rgba(255, 255, 255, .92), rgba(209, 239, 255, .72));\n  border: 1px solid rgba(255, 255, 255, .95);\n  box-shadow: inset 0 1px 0 #fff, 0 4px 12px -8px rgba(5, 70, 110, .7);\n}\n.pulse i {\n  width: 9px; height: 9px;\n  border-radius: 50%;\n  background: radial-gradient(circle at 35% 30%, #dcffb0, var(--lime) 60%, #5d961f);\n  box-shadow: 0 0 0 0 rgba(141, 198, 63, .5), inset 0 1px 1px rgba(255, 255, 255, .8);\n  animation: breathe 3.2s infinite;\n}\n@keyframes breathe {\n  0%, 100% { box-shadow: 0 0 0 0 rgba(141, 198, 63, .5); }\n  50% { box-shadow: 0 0 0 8px rgba(141, 198, 63, 0); }\n}\n\n/* Глянцевые кнопки с «нажимом». */\n.btn {\n  position: relative;\n  font: 700 12px/1 \"Trebuchet MS\", \"Segoe UI\", sans-serif;\n  letter-spacing: .04em;\n  border: 1px solid #0e74a9;\n  border-radius: 12px;\n  padding: 11px 18px;\n  color: #073f63;\n  background: linear-gradient(180deg, #fff 0%, #e3f5ff 35%, #9dd4f2 52%, #64b4e2 100%);\n  text-shadow: 0 1px 0 rgba(255, 255, 255, .8);\n  box-shadow: inset 0 1px 0 #fff, inset 0 -2px 4px rgba(9, 92, 142, .22), 0 5px 0 #2c83b5, 0 10px 18px -8px rgba(6, 70, 110, .65);\n  cursor: pointer;\n  transition: transform .2s var(--spring), box-shadow .2s ease, filter .2s ease;\n}\n.btn::after {\n  content: \"\";\n  position: absolute;\n  left: 8%; right: 8%; top: 2px;\n  height: 40%;\n  border-radius: 999px;\n  background: linear-gradient(180deg, rgba(255, 255, 255, .85), rgba(255, 255, 255, 0));\n  pointer-events: none;\n}\n.btn:hover { transform: translateY(-2px); filter: saturate(1.1); box-shadow: inset 0 1px 0 #fff, inset 0 -2px 4px rgba(9, 92, 142, .2), 0 7px 0 #2c83b5, 0 14px 22px -8px rgba(6, 70, 110, .65); }\n.btn:active { transform: translateY(4px); box-shadow: inset 0 2px 5px rgba(9, 92, 142, .3), 0 1px 0 #2c83b5; }\n.btn--ghost { border-color: rgba(14, 116, 169, .5); background: linear-gradient(180deg, rgba(255, 255, 255, .85), rgba(200, 234, 252, .55)); }\n.btn--primary {\n  border-color: #c47718;\n  color: #4a2b06;\n  background: linear-gradient(180deg, #fff0c8 0%, #ffd477 32%, #ffb544 52%, #f28a22 100%);\n  box-shadow: inset 0 1px 0 #fff5d9, inset 0 -2px 4px rgba(150, 83, 8, .25), 0 5px 0 #b96513, 0 10px 18px -8px rgba(120, 68, 8, .6);\n  padding: 13px 22px;\n  font-size: 13px;\n  white-space: nowrap;\n}\n.btn--primary:hover { box-shadow: inset 0 1px 0 #fff5d9, 0 7px 0 #b96513, 0 14px 22px -8px rgba(120, 68, 8, .6); }\n.btn--primary:active { box-shadow: inset 0 2px 5px rgba(150, 83, 8, .3), 0 1px 0 #b96513; }\n.btn--primary span { opacity: .6; margin-left: 6px; }\n\n/* Основная сетка. */\n.layout {\n  position: relative;\n  z-index: 2;\n  display: grid;\n  grid-template-columns: 230px minmax(0, 1fr) 290px;\n  gap: clamp(18px, 3vw, 42px);\n  padding: 38px clamp(20px, 4vw, 64px) 60px;\n  align-items: start;\n}\n\n.rail { display: flex; flex-direction: column; gap: 16px; }\n.rail__title, .section-head__meta, .events__title {\n  font: 700 10px/1.2 Tahoma, Verdana, sans-serif;\n  letter-spacing: .16em;\n  text-transform: uppercase;\n  color: #4a82a3;\n}\n.rail__title { margin-bottom: 2px; }\n\n.stat {\n  position: relative;\n  overflow: hidden;\n  padding: 20px 18px 18px;\n  border-radius: 18px;\n  background: var(--glass);\n  border: 1px solid var(--glass-line);\n  box-shadow: inset 0 1px 0 #fff, inset 0 -16px 28px rgba(91, 172, 216, .14), var(--shadow), 0 0 0 1px var(--rule);\n  transition: transform .3s var(--spring), box-shadow .3s ease;\n}\n.stat:hover { transform: translateY(-3px) rotate(-.4deg); box-shadow: inset 0 1px 0 #fff, var(--shadow), 0 16px 30px -14px rgba(4, 55, 88, .7); }\n.stat::before {\n  content: \"\";\n  position: absolute;\n  inset: 0 0 auto;\n  height: 5px;\n  background: linear-gradient(90deg, rgba(255, 255, 255, .9), currentColor 60%, rgba(255, 255, 255, .3));\n}\n.stat::after {\n  content: \"\";\n  position: absolute;\n  right: -20px; top: -20px;\n  width: 82px; height: 82px;\n  border-radius: 50%;\n  background: radial-gradient(circle at 32% 28%, rgba(255, 255, 255, .95), rgba(255, 255, 255, .2) 42%, currentColor 72%, transparent 74%);\n  opacity: .22;\n}\n.stat--ink { color: var(--sea); }\n.stat--sage { color: #5f9e2d; }\n.stat--gold { color: #e89518; }\n.stat__num {\n  display: block;\n  font: 700 46px/.95 \"Trebuchet MS\", sans-serif;\n  letter-spacing: -.03em;\n  color: currentColor;\n  text-shadow: 0 1px 0 #fff, 0 -1px 0 rgba(3, 60, 95, .25);\n}\n.stat__label {\n  display: block;\n  margin: 10px 0 4px;\n  font-size: 13px;\n  font-weight: 700;\n  color: var(--ink);\n}\n.stat__hint { display: block; font-size: 11px; color: var(--muted); }\n.rail__note {\n  margin-top: 6px;\n  padding: 8px 12px;\n  border: 1px solid rgba(255, 255, 255, .9);\n  border-radius: 10px;\n  background: linear-gradient(180deg, rgba(255, 255, 255, .9), rgba(199, 232, 251, .72));\n  box-shadow: inset 1px 1px 0 #fff, inset -1px -1px 0 rgba(9, 88, 137, .22), 0 4px 10px -8px rgba(4, 55, 88, .7);\n  font: 12px/1.5 \"Courier New\", monospace;\n  color: #2f6f92;\n  text-align: center;\n}\n\n.section-head { display: flex; align-items: baseline; justify-content: space-between; gap: 16px; margin-bottom: 22px; }\n.section-head h1, .section-head h2 {\n  margin: 0;\n  font: 700 30px/1 \"Trebuchet MS\", sans-serif;\n  letter-spacing: -.01em;\n  color: #0a6296;\n  text-shadow: 0 1px 0 #fff, 0 -1px 0 rgba(5, 65, 102, .25);\n}\n.section-head h2 { font-size: 23px; }\n.section-head--small { margin-bottom: 16px; }\n\n.cards { display: flex; flex-direction: column; gap: 12px; }\n.card {\n  position: relative;\n  overflow: hidden;\n  display: grid;\n  grid-template-columns: 62px 1fr auto;\n  gap: 16px;\n  align-items: center;\n  padding: 16px 18px;\n  border-radius: 16px;\n  background: linear-gradient(135deg, rgba(255, 255, 255, .97), rgba(224, 244, 255, .85) 55%, rgba(190, 229, 250, .75));\n  border: 1px solid rgba(255, 255, 255, .95);\n  box-shadow: inset 0 1px 0 #fff, inset 0 -12px 24px rgba(87, 168, 213, .12), 0 12px 26px -16px rgba(4, 55, 88, .6), 0 0 0 1px var(--rule);\n  transition: transform .25s var(--spring), box-shadow .25s ease;\n}\n.card::before {\n  content: \"\";\n  position: absolute;\n  left: 0; top: 0; bottom: 0;\n  width: 4px;\n  background: linear-gradient(180deg, #9adaf8, #0b7ab3);\n  box-shadow: 1px 0 0 rgba(255, 255, 255, .8);\n}\n.card:hover { transform: translateX(4px); box-shadow: inset 0 1px 0 #fff, 0 16px 30px -14px rgba(4, 55, 88, .7), 0 0 0 1px rgba(14, 116, 169, .3); }\n.card__num {\n  font: 700 12px/1.2 \"Courier New\", monospace;\n  color: #3a7799;\n  text-shadow: 0 1px 0 #fff;\n}\n.card__title { font-weight: 700; }\n.card__meta { font-size: 12px; color: var(--muted); margin-top: 3px; }\n.card__right { text-align: right; display: flex; flex-direction: column; gap: 8px; align-items: flex-end; }\n.card__amount { font: 700 18px/1 \"Trebuchet MS\", sans-serif; white-space: nowrap; color: #0a6296; text-shadow: 0 1px 0 #fff; }\n.pill {\n  display: inline-block;\n  padding: 4px 10px;\n  border-radius: 999px;\n  font: 700 10px/1.2 Tahoma, sans-serif;\n  letter-spacing: .08em;\n  text-transform: uppercase;\n  color: #fff;\n  border: 1px solid rgba(255, 255, 255, .8);\n  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .55), 0 2px 6px -3px rgba(4, 55, 88, .6);\n}\n.pill--sent { background: linear-gradient(180deg, #ffd27a, #f09a25); }\n.pill--paid { background: linear-gradient(180deg, #bde77e, #6fae2c); }\n.pill--draft, .pill--done { background: linear-gradient(180deg, #d8ecf8, #8ab6d0); color: #0b4e76; }\n.linkbtn {\n  border: 0;\n  background: none;\n  padding: 0;\n  font: 700 11px/1 \"Trebuchet MS\", sans-serif;\n  color: #0875ad;\n  cursor: pointer;\n  letter-spacing: .03em;\n  text-shadow: 0 1px 0 #fff;\n}\n.linkbtn:hover { text-decoration: underline; }\n\n.side { display: flex; flex-direction: column; gap: 24px; }\n.rhythm { display: flex; flex-direction: column; gap: 9px; }\n.beat {\n  display: flex;\n  gap: 12px;\n  align-items: flex-start;\n  padding: 12px 14px;\n  border-left: 4px solid #e89518;\n  background: linear-gradient(180deg, rgba(255, 255, 255, .92), rgba(216, 241, 255, .7));\n  border-radius: 4px 12px 12px 4px;\n  box-shadow: inset 0 1px 0 #fff, 0 6px 14px -10px rgba(4, 55, 88, .6);\n}\n.beat__dot { width: 8px; height: 8px; border-radius: 50%; background: radial-gradient(circle at 35% 30%, #ffe09c, #e89518); margin-top: 6px; flex: none; box-shadow: 0 1px 2px rgba(4, 55, 88, .3); }\n.beat__text { font-size: 13px; }\n.beat__date { font-size: 11px; color: var(--muted); margin-top: 3px; }\n.beat--task { border-left-color: #5f9e2d; }\n.beat--task .beat__dot { background: radial-gradient(circle at 35% 30%, #d6f5a8, #6fae2c); }\n\n.events ol { list-style: none; margin: 10px 0 0; padding: 0; }\n.events li {\n  display: flex; gap: 9px; padding: 8px 0;\n  border-bottom: 1px solid rgba(18, 105, 155, .14);\n  font-size: 12px; color: var(--muted);\n}\n.events li time { font: 11px/1.5 \"Courier New\", monospace; color: #3a7799; flex: none; }\n\n/* Нижняя панель — как старый taskbar, только стеклянный. */\n.composer {\n  position: fixed;\n  left: 0; right: 0; bottom: 0;\n  z-index: 8;\n  padding: 16px clamp(20px, 4vw, 64px) 20px;\n  background: linear-gradient(180deg, rgba(10, 105, 160, 0), rgba(9, 84, 132, .78) 32%, rgba(5, 61, 100, .94));\n  border-top: 1px solid rgba(255, 255, 255, .65);\n  box-shadow: 0 -10px 34px -14px rgba(3, 45, 75, .7);\n  backdrop-filter: blur(6px);\n}\n.composer__inner {\n  max-width: 1120px;\n  margin: 0 auto;\n  padding: 16px 18px 12px;\n  border-radius: 18px;\n  background: linear-gradient(155deg, rgba(255, 255, 255, .96), rgba(215, 241, 255, .88) 55%, rgba(180, 223, 247, .82));\n  border: 1px solid rgba(255, 255, 255, .95);\n  box-shadow: inset 0 1px 0 #fff, 0 14px 32px -14px rgba(2, 50, 85, .8), 0 0 0 1px rgba(9, 88, 137, .25);\n}\n.modes { display: flex; gap: 7px; margin-bottom: 12px; }\n.mode {\n  border: 1px solid rgba(14, 116, 169, .35);\n  background: linear-gradient(180deg, #fff, #d7eefc);\n  padding: 7px 14px;\n  border-radius: 10px;\n  font: 700 11px/1 \"Trebuchet MS\", sans-serif;\n  color: #4a82a3;\n  cursor: pointer;\n  box-shadow: inset 0 1px 0 #fff, 0 2px 0 rgba(18, 111, 160, .22);\n  transition: transform .18s var(--spring), box-shadow .18s ease, color .18s ease;\n}\n.mode:hover { color: var(--ink); transform: translateY(-1px); }\n.mode.is-active {\n  color: #fff;\n  border-color: #0a6fa8;\n  background: linear-gradient(180deg, #6fc5ee, #1583bd 52%, #0a6fa8);\n  text-shadow: 0 1px 0 rgba(0, 55, 90, .45);\n  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .55), 0 3px 0 #07527f, 0 6px 12px -6px rgba(4, 55, 88, .7);\n}\n.composer__row { display: flex; gap: 12px; align-items: stretch; }\ntextarea {\n  flex: 1;\n  resize: none;\n  min-height: 58px;\n  padding: 13px 15px;\n  border: 1px solid #8fc7e8;\n  border-radius: 12px;\n  background: linear-gradient(180deg, #fbfeff, #e8f6ff);\n  color: var(--ink);\n  font: 14px/1.5 \"Segoe UI\", Tahoma, sans-serif;\n  outline: none;\n  box-shadow: inset 0 2px 6px rgba(16, 88, 130, .14), 0 1px 0 #fff;\n  transition: border-color .2s, box-shadow .2s;\n}\ntextarea::placeholder { color: #6f9db8; }\ntextarea:focus { border-color: #2aa7dd; box-shadow: inset 0 2px 6px rgba(16, 88, 130, .12), 0 0 0 3px rgba(47, 177, 226, .24); }\n.composer__foot {\n  display: flex; justify-content: space-between;\n  margin-top: 9px; font-size: 11px; color: #4a82a3;\n}\n\n/* Выдвижная панель отчёта. */\n.drawer { position: fixed; inset: 0; z-index: 20; background: rgba(3, 52, 86, .48); backdrop-filter: blur(4px); }\n.drawer__sheet {\n  position: absolute; right: 0; top: 0; bottom: 0;\n  width: min(520px, 92vw);\n  padding: 42px 34px;\n  background: linear-gradient(160deg, rgba(255, 255, 255, .97), rgba(214, 240, 255, .92));\n  border-left: 1px solid #fff;\n  box-shadow: -20px 0 60px -30px rgba(2, 45, 75, .8), inset 1px 0 0 rgba(255, 255, 255, .8);\n  animation: slide .32s var(--spring);\n}\n@keyframes slide { from { transform: translateX(30px); opacity: .4; } }\n.drawer__close { position: absolute; top: 18px; right: 22px; border: 1px solid rgba(14, 116, 169, .35); background: linear-gradient(180deg, #fff, #d7eefc); border-radius: 10px; width: 34px; height: 34px; font-size: 22px; cursor: pointer; color: var(--ink); box-shadow: inset 0 1px 0 #fff, 0 2px 0 rgba(18, 111, 160, .22); }\n.drawer__title { font: 700 26px/1 \"Trebuchet MS\", sans-serif; color: #0a6296; text-shadow: 0 1px 0 #fff; margin-bottom: 22px; }\n.drawer pre { white-space: pre-wrap; font: 13px/1.7 \"Courier New\", monospace; color: var(--ink); }\n\n.toast {\n  position: fixed; left: 50%; bottom: 200px; z-index: 30;\n  transform: translateX(-50%);\n  padding: 12px 20px;\n  border-radius: 12px;\n  background: linear-gradient(180deg, #fff, #d9f0ff);\n  border: 1px solid rgba(255, 255, 255, .95);\n  color: #0a6296;\n  font: 700 13px/1 \"Trebuchet MS\", sans-serif;\n  box-shadow: inset 0 1px 0 #fff, 0 14px 30px -14px rgba(3, 52, 86, .7);\n  animation: rise .3s var(--spring);\n}\n@keyframes rise { from { transform: translate(-50%, 12px); opacity: 0; } }\n\n.empty { padding: 30px; text-align: center; color: var(--muted); font-size: 13px; border: 1px dashed rgba(18, 105, 155, .35); border-radius: 16px; background: rgba(255, 255, 255, .4); }\n\n/* Старомодный скроллбар, чтобы не выбивался из вайба. */\n::-webkit-scrollbar { width: 12px; }\n::-webkit-scrollbar-track { background: #d9effc; }\n::-webkit-scrollbar-thumb { border-radius: 10px; border: 2px solid #d9effc; background: linear-gradient(180deg, #fff, #8fc9e9 45%, #4d9fcb); }\n\n@media (max-width: 1100px) {\n  .layout { grid-template-columns: 190px minmax(0, 1fr); }\n  .side { grid-column: 1 / -1; flex-direction: row; flex-wrap: wrap; }\n  .side > * { flex: 1 1 260px; }\n}\n@media (max-width: 720px) {\n  body { padding-bottom: 240px; }\n  .layout { grid-template-columns: 1fr; }\n  .rail { flex-direction: row; flex-wrap: wrap; }\n  .stat { flex: 1 1 140px; }\n  .topbar { align-items: flex-start; flex-direction: column; }\n  .brand__mark { font-size: 25px; }\n  .brand__orb { width: 44px; height: 44px; }\n  .card { grid-template-columns: 48px 1fr; }\n  .card__right { grid-column: 2; align-items: flex-start; }\n  .composer__row { flex-direction: column; }\n  .btn--primary { align-self: flex-end; }\n}\n@media (prefers-reduced-motion: reduce) {\n  *, *::before, *::after { animation: none !important; transition: none !important; }\n}\n", "app.js": "const $ = (selector) => document.querySelector(selector);\nconst $$ = (selector) => Array.from(document.querySelectorAll(selector));\n\nlet mode = \"invoice\";\nlet toastTimer;\n\nasync function api(path, options = {}) {\n  const response = await fetch(path, {\n    headers: { \"Content-Type\": \"application/json\" },\n    ...options,\n  });\n  if (!response.ok) {\n    const body = await response.json().catch(() => ({ detail: response.statusText }));\n    throw new Error(body.detail || response.statusText);\n  }\n  return response.json();\n}\n\nconst escapeHtml = (value) =>\n  String(value ?? \"\").replace(/[&<>\"']/g, (char) =>\n    ({ \"&\": \"&amp;\", \"<\": \"&lt;\", \">\": \"&gt;\", '\"': \"&quot;\", \"'\": \"&#39;\" })[char]\n  );\n\nconst money = (value) =>\n  new Intl.NumberFormat(\"ru-RU\", { style: \"currency\", currency: \"RUB\", maximumFractionDigits: 2 }).format(value || 0);\n\nfunction toast(message, isError = false) {\n  const node = $(\"#toast\");\n  node.textContent = message;\n  node.style.background = isError ? \"#8c3b2b\" : \"#24211c\";\n  node.hidden = false;\n  clearTimeout(toastTimer);\n  toastTimer = setTimeout(() => { node.hidden = true; }, 3600);\n}\n\nfunction statusLabels(kind, status) {\n  if (kind === \"capture\") return [\"done\", \"импорт\"];\n  return [status === \"paid\" ? \"paid\" : \"sent\", status === \"paid\" ? \"оплачено\" : \"в работе\"];\n}\n\nfunction renderDocuments(documents) {\n  const container = $(\"#documents\");\n  if (!documents.length) {\n    container.innerHTML = '<div class=\"empty\">Пока тихо. Вставь текст ниже — и появится первый документ.</div>';\n    return;\n  }\n  container.innerHTML = documents.map((doc) => {\n    const [pillClass, pillText] = statusLabels(doc.kind, doc.status);\n    const number = `${doc.kind === \"capture\" ? \"И\" : \"С\"}-${String(doc.id).padStart(4, \"0\")}`;\n    const due = doc.due_date ? `оплата до ${escapeHtml(doc.due_date)}` : escapeHtml(String(doc.created_at).slice(0, 10));\n    const files = doc.kind === \"invoice\"\n      ? `<a class=\"linkbtn\" href=\"/api/documents/${doc.id}/download?key=invoice_file\" target=\"_blank\">счёт ↗</a>\n         <a class=\"linkbtn\" href=\"/api/documents/${doc.id}/download?key=act_file\" target=\"_blank\">акт ↗</a>`\n      : `<span class=\"card__meta\">${escapeHtml(doc.payload?.rows ?? 0)} строк</span>`;\n    const excel = `<a class=\"linkbtn\" href=\"/api/documents/${doc.id}/export.xlsx\">Excel ↓</a>`;\n    const pay = doc.kind === \"invoice\" && doc.status !== \"paid\"\n      ? `<button class=\"linkbtn\" data-paid=\"${doc.id}\">отметить оплату</button>` : \"\";\n    return `<article class=\"card\">\n      <div class=\"card__num\">${number}</div>\n      <div>\n        <div class=\"card__title\">${escapeHtml(doc.title)}</div>\n        <div class=\"card__meta\">${escapeHtml(doc.client_name)} · ${due}</div>\n      </div>\n      <div class=\"card__right\">\n        <div class=\"card__amount\">${money(doc.amount)}</div>\n        <span class=\"pill pill--${pillClass}\">${pillText}</span>\n        <div>${files}${excel}${pay}</div>\n      </div>\n    </article>`;\n  }).join(\"\");\n}\n\nfunction renderRhythm(data) {\n  const container = $(\"#rhythm\");\n  const beats = [];\n  for (const task of data.tasks || []) {\n    beats.push(`<div class=\"beat beat--task\">\n      <span class=\"beat__dot\"></span>\n      <div><div class=\"beat__text\">${escapeHtml(task.title)}</div>\n      <div class=\"beat__date\">${task.due_date ? `до ${escapeHtml(task.due_date)}` : \"без срока\"} · задача</div></div>\n    </div>`);\n  }\n  for (const doc of data.documents || []) {\n    if (doc.due_date && doc.status !== \"paid\" && doc.kind === \"invoice\") {\n      beats.push(`<div class=\"beat\">\n        <span class=\"beat__dot\"></span>\n        <div><div class=\"beat__text\">${escapeHtml(doc.client_name)} — ${money(doc.amount)}</div>\n        <div class=\"beat__date\">до ${escapeHtml(doc.due_date)} · оплата</div></div>\n      </div>`);\n    }\n  }\n  container.innerHTML = beats.length ? beats.join(\"\") : '<div class=\"empty\">Ритм спокойный.</div>';\n}\n\nconst eventNames = {\n  \"document.created\": \"новый документ\",\n  \"document.updated\": \"документ обновлён\",\n  \"payment.received\": \"оплата пришла\",\n  \"task.created\": \"задача записана\",\n  \"task.done\": \"задача закрыта\",\n  \"reminder.sent\": \"напоминание ушло\",\n};\n\nfunction renderEvents(events) {\n  $(\"#events\").innerHTML = (events || []).map((event) => {\n    const time = String(event.created_at || \"\").slice(11, 16);\n    return `<li><time>${escapeHtml(time)}</time><span>${escapeHtml(eventNames[event.kind] || event.kind)} · ${escapeHtml(event.detail)}</span></li>`;\n  }).join(\"\") || '<li>Событий пока нет.</li>';\n}\n\nasync function load() {\n  try {\n    const data = await api(\"/api/overview\");\n    const counts = data.counts;\n    $(\"#stat-unpaid\").textContent = counts.unpaid;\n    $(\"#stat-overdue\").textContent = counts.overdue ? `${counts.overdue} просрочено` : \"просрочек нет\";\n    $(\"#stat-tasks\").textContent = counts.open_tasks;\n    $(\"#stat-docs\").textContent = counts.documents;\n    $(\"#feed-meta\").textContent = `${counts.documents} документов · ${counts.pending_reminders} напоминаний`;\n    renderDocuments(data.documents);\n    renderRhythm(data);\n    renderEvents(data.events);\n  } catch (error) {\n    toast(`Не загрузилось: ${error.message}`, true);\n  }\n}\n\nasync function markPaid(id) {\n  try {\n    await api(`/api/documents/${id}/paid`, { method: \"POST\" });\n    toast(\"Отмечено оплаченным\");\n    await load();\n  } catch (error) {\n    toast(error.message, true);\n  }\n}\n\nasync function submit() {\n  const input = $(\"#input\");\n  const text = input.value.trim();\n  if (!text) { toast(\"Напиши хоть что-нибудь\", true); return; }\n  const endpoints = {\n    invoice: [\"/api/invoices\", { text, due_days: 7 }],\n    capture: [\"/api/capture\", { text }],\n    task: [\"/api/tasks\", { text, source: \"web\" }],\n  };\n  const [path, body] = endpoints[mode];\n  const button = $(\"#submit\");\n  button.disabled = true;\n  $(\"#status\").textContent = \"делаем…\";\n  try {\n    const result = await api(path, { method: \"POST\", body: JSON.stringify(body) });\n    const messages = {\n      invoice: `Счёт №${result.id} готов`,\n      capture: `Импортировано строк: ${result.rows}`,\n      task: `Задача #${result.id} записана`,\n    };\n    toast(messages[mode]);\n    input.value = \"\";\n    await load();\n  } catch (error) {\n    toast(error.message, true);\n  } finally {\n    button.disabled = false;\n    $(\"#status\").textContent = \"\";\n  }\n}\n\nfunction tickClock() {\n  const now = new Date();\n  $(\"#clock\").textContent = new Intl.DateTimeFormat(\"ru-RU\", {\n    day: \"2-digit\", month: \"long\", hour: \"2-digit\", minute: \"2-digit\",\n  }).format(now);\n}\n\n$$(\".mode\").forEach((button) => {\n  button.addEventListener(\"click\", () => {\n    mode = button.dataset.mode;\n    $$(\".mode\").forEach((item) => item.classList.toggle(\"is-active\", item === button));\n    const placeholders = {\n      invoice: \"Вставь договор или переписку: клиент, сумма, срок…\",\n      capture: \"Вставь таблицу с разделителем | или ;\",\n      task: \"Что нужно сделать? Можно с датой: «до 25 ноября»\",\n    };\n    $(\"#input\").placeholder = placeholders[mode];\n    $(\"#input\").focus();\n  });\n});\n\n$(\"#submit\").addEventListener(\"click\", submit);\n$(\"#documents\").addEventListener(\"click\", (event) => {\n  const id = event.target.dataset.paid;\n  if (id) markPaid(id);\n});\n\n$(\"#report-btn\").addEventListener(\"click\", async () => {\n  try {\n    const data = await api(\"/api/reports/weekly\");\n    $(\"#report-text\").textContent = data.text;\n    $(\"#drawer\").hidden = false;\n  } catch (error) {\n    toast(error.message, true);\n  }\n});\n$(\"#drawer-close\").addEventListener(\"click\", () => { $(\"#drawer\").hidden = true; });\n$(\"#drawer\").addEventListener(\"click\", (event) => {\n  if (event.target === $(\"#drawer\")) $(\"#drawer\").hidden = true;\n});\n\ndocument.addEventListener(\"keydown\", (event) => {\n  if (event.key === \"Escape\") $(\"#drawer\").hidden = true;\n  if ((event.ctrlKey || event.metaKey) && event.key === \"Enter\") { event.preventDefault(); submit(); }\n  if (event.key === \"/\" && document.activeElement !== $(\"#input\")) {\n    event.preventDefault();\n    $(\"#input\").focus();\n  }\n});\n\ntickClock();\nsetInterval(tickClock, 30000);\nload();\n"};
+const ASSETS = {"index.html": "<!doctype html>\n<html lang=\"ru\">\n<head>\n  <meta charset=\"utf-8\">\n  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">\n  <title>Такт — администратор рутины</title>\n  <link rel=\"icon\" href=\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cdefs%3E%3CradialGradient id='g' cx='35%25' cy='28%25'%3E%3Cstop offset='0' stop-color='%23ffffff'/%3E%3Cstop offset='.45' stop-color='%23bfe9ff'/%3E%3Cstop offset='1' stop-color='%230c6fa6'/%3E%3C/radialGradient%3E%3C/defs%3E%3Ccircle cx='32' cy='32' r='29' fill='url(%23g)'/%3E%3Cellipse cx='23' cy='19' rx='10' ry='6' fill='%23ffffff' opacity='.85' transform='rotate(-25 23 19)'/%3E%3C/svg%3E\">\n  <link rel=\"stylesheet\" href=\"/web/styles.css\">\n</head>\n<body>\n  <div class=\"sky\" aria-hidden=\"true\"></div>\n  <div class=\"grain\" aria-hidden=\"true\"></div>\n\n  <header class=\"topbar\">\n    <div class=\"brand\">\n      <span class=\"brand__orb\" aria-hidden=\"true\"></span>\n      <span class=\"brand__text\">\n        <span class=\"brand__mark\">ТАКТ</span>\n        <span class=\"brand__note\">тихий администратор рутины</span>\n      </span>\n    </div>\n    <div class=\"topbar__right\">\n      <span class=\"win-controls\" aria-hidden=\"true\"><i></i><i></i><i></i></span>\n      <span class=\"pulse\"><i></i> работает без тебя</span>\n      <button class=\"btn btn--ghost\" id=\"report-btn\">Отчёт за неделю</button>\n    </div>\n  </header>\n\n  <main class=\"layout\">\n    <section class=\"rail\" aria-label=\"Сводка\">\n      <div class=\"rail__title\">Сегодня</div>\n      <div class=\"stat stat--ink\">\n        <span class=\"stat__num\" id=\"stat-unpaid\">—</span>\n        <span class=\"stat__label\">ждут оплаты</span>\n        <span class=\"stat__hint\" id=\"stat-overdue\">просрочек нет</span>\n      </div>\n      <div class=\"stat stat--sage\">\n        <span class=\"stat__num\" id=\"stat-tasks\">—</span>\n        <span class=\"stat__label\">открытых задач</span>\n        <span class=\"stat__hint\">записано и не забыто</span>\n      </div>\n      <div class=\"stat stat--gold\">\n        <span class=\"stat__num\" id=\"stat-docs\">—</span>\n        <span class=\"stat__label\">документов всего</span>\n        <span class=\"stat__hint\">счета, акты, импорты</span>\n      </div>\n      <div class=\"rail__note\" id=\"clock\">—</div>\n    </section>\n\n    <section class=\"feed\">\n      <div class=\"section-head\">\n        <h1>Поток дел</h1>\n        <span class=\"section-head__meta\" id=\"feed-meta\">загружаем…</span>\n      </div>\n      <div class=\"cards\" id=\"documents\"></div>\n    </section>\n\n    <aside class=\"side\">\n      <div class=\"section-head section-head--small\">\n        <h2>Ритм</h2>\n        <span class=\"section-head__meta\">напоминания и задачи</span>\n      </div>\n      <div class=\"rhythm\" id=\"rhythm\"></div>\n      <div class=\"events\">\n        <div class=\"events__title\">Что случилось только что</div>\n        <ol id=\"events\"></ol>\n      </div>\n    </aside>\n  </main>\n\n  <section class=\"composer\" aria-label=\"Быстрый ввод\">\n    <div class=\"composer__inner\">\n      <div class=\"modes\" role=\"tablist\">\n        <button class=\"mode is-active\" data-mode=\"invoice\" role=\"tab\">Счёт и акт</button>\n        <button class=\"mode\" data-mode=\"capture\" role=\"tab\">Таблица</button>\n        <button class=\"mode\" data-mode=\"task\" role=\"tab\">Задача</button>\n      </div>\n      <div class=\"composer__row\">\n        <textarea id=\"input\" rows=\"2\" placeholder=\"Вставь договор, переписку, таблицу или просто скажи, что нужно сделать…\"></textarea>\n        <button class=\"btn btn--primary\" id=\"submit\">Отпустить <span>↵</span></button>\n      </div>\n      <div class=\"composer__foot\">\n        <span id=\"hint\">Ctrl+Enter — отправить · / — фокус</span>\n        <span id=\"status\" aria-live=\"polite\"></span>\n      </div>\n    </div>\n  </section>\n\n  <div class=\"drawer\" id=\"drawer\" hidden>\n    <div class=\"drawer__sheet\">\n      <button class=\"drawer__close\" id=\"drawer-close\" aria-label=\"Закрыть\">×</button>\n      <div class=\"drawer__title\">Отчёт за неделю</div>\n      <pre id=\"report-text\"></pre>\n    </div>\n  </div>\n\n  <div class=\"toast\" id=\"toast\" hidden></div>\n  <script src=\"/web/app.js\"></script>\n</body>\n</html>\n", "styles.css": "/* Такт — Frutiger Aero / старый добрый Web 2.0.\n   Стекло, глянец, пузыри, мягкий синий воздух — без лишнего шума. */\n\n:root {\n  --sea: #0c6fa6;\n  --sea-deep: #064c77;\n  --sea-soft: #4aa9d8;\n  --ice: #f4fbff;\n  --sky: #cfeaff;\n  --lime: #8dc63f;\n  --amber: #ffb544;\n  --coral: #ff7d5c;\n  --ink: #0b3f60;\n  --muted: #4f7b98;\n  --rule: rgba(18, 105, 155, .18);\n  --glass: linear-gradient(145deg, rgba(255, 255, 255, .96), rgba(224, 243, 255, .82) 45%, rgba(176, 219, 245, .7));\n  --glass-line: rgba(255, 255, 255, .92);\n  --shadow: 0 16px 32px -16px rgba(4, 55, 88, .6);\n  --spring: cubic-bezier(.18, .89, .32, 1.28);\n}\n\n* { box-sizing: border-box; }\n\nhtml, body { min-height: 100%; }\n\nbody {\n  margin: 0;\n  padding-bottom: 210px;\n  color: var(--ink);\n  font: 14px/1.55 \"Segoe UI\", Tahoma, Verdana, sans-serif;\n  background:\n    radial-gradient(circle at 12% 4%, rgba(255, 255, 255, .95) 0 5%, transparent 26%),\n    radial-gradient(circle at 86% 16%, rgba(146, 223, 255, .6), transparent 30%),\n    radial-gradient(circle at 48% 100%, rgba(144, 205, 241, .85), transparent 58%),\n    linear-gradient(180deg, #eaf9ff 0%, #d8f0ff 42%, #c2e5fa 100%);\n  -webkit-font-smoothing: antialiased;\n}\n\n/* Пузыри и зерно — декоративный фон, ничего не ловят. */\n.sky {\n  position: fixed;\n  inset: 0;\n  z-index: 0;\n  overflow: hidden;\n  pointer-events: none;\n}\n.sky::before {\n  content: \"\";\n  position: absolute;\n  inset: -18%;\n  background:\n    radial-gradient(circle at 9% 14%, #fff 0 3px, rgba(255, 255, 255, .72) 9px, rgba(75, 169, 218, .22) 19px, transparent 20px),\n    radial-gradient(circle at 27% 68%, #fff 0 4px, rgba(255, 255, 255, .65) 12px, rgba(75, 169, 218, .18) 25px, transparent 26px),\n    radial-gradient(circle at 63% 18%, #fff 0 2px, rgba(255, 255, 255, .6) 8px, rgba(75, 169, 218, .2) 17px, transparent 18px),\n    radial-gradient(circle at 78% 76%, #fff 0 5px, rgba(255, 255, 255, .6) 14px, rgba(75, 169, 218, .16) 29px, transparent 30px),\n    radial-gradient(circle at 94% 42%, #fff 0 3px, rgba(255, 255, 255, .55) 10px, rgba(75, 169, 218, .15) 21px, transparent 22px);\n  opacity: .85;\n  animation: drift 26s ease-in-out infinite alternate;\n}\n.sky::after {\n  content: \"\";\n  position: absolute;\n  right: -90px;\n  top: 12%;\n  width: 260px;\n  height: 260px;\n  border-radius: 50%;\n  background: radial-gradient(circle at 34% 28%, rgba(255, 255, 255, .96), rgba(255, 255, 255, .35) 30%, rgba(66, 164, 214, .25) 68%, transparent 72%);\n  box-shadow: inset -18px -22px 40px rgba(14, 89, 134, .18), inset 12px 14px 26px rgba(255, 255, 255, .9);\n  animation: hover 12s ease-in-out infinite;\n}\n@keyframes drift {\n  from { transform: translate3d(0, 0, 0); }\n  to { transform: translate3d(-28px, 32px, 0); }\n}\n@keyframes hover {\n  0%, 100% { transform: translateY(0) scale(1); }\n  50% { transform: translateY(-22px) scale(1.04); }\n}\n\n.grain {\n  position: fixed;\n  inset: 0;\n  z-index: 12;\n  pointer-events: none;\n  opacity: .14;\n  background-image: url(\"data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.4'/%3E%3C/svg%3E\");\n}\n\n/* Верхняя панель — глянцевая, как старый системный заголовок. */\n.topbar {\n  position: relative;\n  z-index: 3;\n  display: flex;\n  align-items: center;\n  justify-content: space-between;\n  gap: 24px;\n  padding: 22px clamp(20px, 4vw, 64px) 18px;\n  border-bottom: 1px solid rgba(255, 255, 255, .9);\n  background: linear-gradient(180deg, rgba(255, 255, 255, .8), rgba(255, 255, 255, .22));\n  box-shadow: 0 1px 0 rgba(10, 90, 140, .22), 0 12px 30px -22px rgba(6, 70, 110, .7);\n  backdrop-filter: blur(8px);\n}\n\n.brand { display: flex; align-items: center; gap: 14px; }\n.brand__text { display: flex; flex-direction: column; gap: 2px; }\n.brand__orb {\n  position: relative;\n  flex: none;\n  width: 54px;\n  height: 54px;\n  border-radius: 50%;\n  background: radial-gradient(circle at 34% 26%, #fff 0 8%, #c8edff 24%, #35a9dc 58%, #0a6da6 100%);\n  box-shadow: inset -6px -8px 16px rgba(0, 61, 100, .38), inset 5px 6px 12px rgba(255, 255, 255, .95), 0 9px 20px -8px rgba(8, 83, 130, .75);\n  animation: hover 9s ease-in-out infinite;\n}\n.brand__orb::after {\n  content: \"\";\n  position: absolute;\n  left: 13%;\n  top: 10%;\n  width: 38%;\n  height: 22%;\n  border-radius: 50%;\n  background: rgba(255, 255, 255, .9);\n  filter: blur(2px);\n  transform: rotate(-24deg);\n}\n.brand__mark {\n  font: 700 30px/1 \"Trebuchet MS\", \"Segoe UI\", sans-serif;\n  letter-spacing: .16em;\n  color: #0a6296;\n  text-shadow: 0 1px 0 #fff, 0 -1px 0 rgba(4, 66, 105, .4);\n}\n.brand__note {\n  font: 10px/1.2 Tahoma, Verdana, sans-serif;\n  letter-spacing: .14em;\n  text-transform: uppercase;\n  color: var(--muted);\n}\n\n.topbar__right { display: flex; align-items: center; gap: 18px; }\n.win-controls { display: flex; gap: 6px; }\n.win-controls i {\n  position: relative;\n  width: 22px; height: 20px;\n  border: 1px solid rgba(255, 255, 255, .9);\n  border-radius: 5px;\n  background: linear-gradient(180deg, #fff 0%, #d9f1ff 44%, #78bbe3 52%, #4e9ecd 100%);\n  box-shadow: inset 0 1px 0 #fff, inset 0 -2px 3px rgba(9, 88, 137, .25), 0 2px 0 rgba(10, 90, 140, .35);\n}\n.win-controls i::after {\n  position: absolute;\n  left: 0; right: 0; top: 4px;\n  text-align: center;\n  font: 700 10px/1 Tahoma, sans-serif;\n  color: #0a6296;\n  text-shadow: 0 1px 0 #fff;\n}\n.win-controls i:nth-child(1)::after { content: \"_\"; }\n.win-controls i:nth-child(2)::after { content: \"□\"; font-size: 9px; }\n.win-controls i:nth-child(3)::after { content: \"×\"; font-size: 13px; color: #b3472f; }\n.pulse {\n  display: inline-flex;\n  align-items: center;\n  gap: 9px;\n  padding: 7px 12px;\n  border-radius: 999px;\n  font-size: 11px;\n  color: #176487;\n  background: linear-gradient(180deg, rgba(255, 255, 255, .92), rgba(209, 239, 255, .72));\n  border: 1px solid rgba(255, 255, 255, .95);\n  box-shadow: inset 0 1px 0 #fff, 0 4px 12px -8px rgba(5, 70, 110, .7);\n}\n.pulse i {\n  width: 9px; height: 9px;\n  border-radius: 50%;\n  background: radial-gradient(circle at 35% 30%, #dcffb0, var(--lime) 60%, #5d961f);\n  box-shadow: 0 0 0 0 rgba(141, 198, 63, .5), inset 0 1px 1px rgba(255, 255, 255, .8);\n  animation: breathe 3.2s infinite;\n}\n@keyframes breathe {\n  0%, 100% { box-shadow: 0 0 0 0 rgba(141, 198, 63, .5); }\n  50% { box-shadow: 0 0 0 8px rgba(141, 198, 63, 0); }\n}\n\n/* Глянцевые кнопки с «нажимом». */\n.btn {\n  position: relative;\n  font: 700 12px/1 \"Trebuchet MS\", \"Segoe UI\", sans-serif;\n  letter-spacing: .04em;\n  border: 1px solid #0e74a9;\n  border-radius: 12px;\n  padding: 11px 18px;\n  color: #073f63;\n  background: linear-gradient(180deg, #fff 0%, #e3f5ff 35%, #9dd4f2 52%, #64b4e2 100%);\n  text-shadow: 0 1px 0 rgba(255, 255, 255, .8);\n  box-shadow: inset 0 1px 0 #fff, inset 0 -2px 4px rgba(9, 92, 142, .22), 0 5px 0 #2c83b5, 0 10px 18px -8px rgba(6, 70, 110, .65);\n  cursor: pointer;\n  transition: transform .2s var(--spring), box-shadow .2s ease, filter .2s ease;\n}\n.btn::after {\n  content: \"\";\n  position: absolute;\n  left: 8%; right: 8%; top: 2px;\n  height: 40%;\n  border-radius: 999px;\n  background: linear-gradient(180deg, rgba(255, 255, 255, .85), rgba(255, 255, 255, 0));\n  pointer-events: none;\n}\n.btn:hover { transform: translateY(-2px); filter: saturate(1.1); box-shadow: inset 0 1px 0 #fff, inset 0 -2px 4px rgba(9, 92, 142, .2), 0 7px 0 #2c83b5, 0 14px 22px -8px rgba(6, 70, 110, .65); }\n.btn:active { transform: translateY(4px); box-shadow: inset 0 2px 5px rgba(9, 92, 142, .3), 0 1px 0 #2c83b5; }\n.btn--ghost { border-color: rgba(14, 116, 169, .5); background: linear-gradient(180deg, rgba(255, 255, 255, .85), rgba(200, 234, 252, .55)); }\n.btn--primary {\n  border-color: #c47718;\n  color: #4a2b06;\n  background: linear-gradient(180deg, #fff0c8 0%, #ffd477 32%, #ffb544 52%, #f28a22 100%);\n  box-shadow: inset 0 1px 0 #fff5d9, inset 0 -2px 4px rgba(150, 83, 8, .25), 0 5px 0 #b96513, 0 10px 18px -8px rgba(120, 68, 8, .6);\n  padding: 13px 22px;\n  font-size: 13px;\n  white-space: nowrap;\n}\n.btn--primary:hover { box-shadow: inset 0 1px 0 #fff5d9, 0 7px 0 #b96513, 0 14px 22px -8px rgba(120, 68, 8, .6); }\n.btn--primary:active { box-shadow: inset 0 2px 5px rgba(150, 83, 8, .3), 0 1px 0 #b96513; }\n.btn--primary span { opacity: .6; margin-left: 6px; }\n\n/* Основная сетка. */\n.layout {\n  position: relative;\n  z-index: 2;\n  display: grid;\n  grid-template-columns: 230px minmax(0, 1fr) 290px;\n  gap: clamp(18px, 3vw, 42px);\n  padding: 38px clamp(20px, 4vw, 64px) 60px;\n  align-items: start;\n}\n\n.rail { display: flex; flex-direction: column; gap: 16px; }\n.rail__title, .section-head__meta, .events__title {\n  font: 700 10px/1.2 Tahoma, Verdana, sans-serif;\n  letter-spacing: .16em;\n  text-transform: uppercase;\n  color: #4a82a3;\n}\n.rail__title { margin-bottom: 2px; }\n\n.stat {\n  position: relative;\n  overflow: hidden;\n  padding: 20px 18px 18px;\n  border-radius: 18px;\n  background: var(--glass);\n  border: 1px solid var(--glass-line);\n  box-shadow: inset 0 1px 0 #fff, inset 0 -16px 28px rgba(91, 172, 216, .14), var(--shadow), 0 0 0 1px var(--rule);\n  transition: transform .3s var(--spring), box-shadow .3s ease;\n}\n.stat:hover { transform: translateY(-3px) rotate(-.4deg); box-shadow: inset 0 1px 0 #fff, var(--shadow), 0 16px 30px -14px rgba(4, 55, 88, .7); }\n.stat::before {\n  content: \"\";\n  position: absolute;\n  inset: 0 0 auto;\n  height: 5px;\n  background: linear-gradient(90deg, rgba(255, 255, 255, .9), currentColor 60%, rgba(255, 255, 255, .3));\n}\n.stat::after {\n  content: \"\";\n  position: absolute;\n  right: -20px; top: -20px;\n  width: 82px; height: 82px;\n  border-radius: 50%;\n  background: radial-gradient(circle at 32% 28%, rgba(255, 255, 255, .95), rgba(255, 255, 255, .2) 42%, currentColor 72%, transparent 74%);\n  opacity: .22;\n}\n.stat--ink { color: var(--sea); }\n.stat--sage { color: #5f9e2d; }\n.stat--gold { color: #e89518; }\n.stat__num {\n  display: block;\n  font: 700 46px/.95 \"Trebuchet MS\", sans-serif;\n  letter-spacing: -.03em;\n  color: currentColor;\n  text-shadow: 0 1px 0 #fff, 0 -1px 0 rgba(3, 60, 95, .25);\n}\n.stat__label {\n  display: block;\n  margin: 10px 0 4px;\n  font-size: 13px;\n  font-weight: 700;\n  color: var(--ink);\n}\n.stat__hint { display: block; font-size: 11px; color: var(--muted); }\n.rail__note {\n  margin-top: 6px;\n  padding: 8px 12px;\n  border: 1px solid rgba(255, 255, 255, .9);\n  border-radius: 10px;\n  background: linear-gradient(180deg, rgba(255, 255, 255, .9), rgba(199, 232, 251, .72));\n  box-shadow: inset 1px 1px 0 #fff, inset -1px -1px 0 rgba(9, 88, 137, .22), 0 4px 10px -8px rgba(4, 55, 88, .7);\n  font: 12px/1.5 \"Courier New\", monospace;\n  color: #2f6f92;\n  text-align: center;\n}\n\n.section-head { display: flex; align-items: baseline; justify-content: space-between; gap: 16px; margin-bottom: 22px; }\n.section-head h1, .section-head h2 {\n  margin: 0;\n  font: 700 30px/1 \"Trebuchet MS\", sans-serif;\n  letter-spacing: -.01em;\n  color: #0a6296;\n  text-shadow: 0 1px 0 #fff, 0 -1px 0 rgba(5, 65, 102, .25);\n}\n.section-head h2 { font-size: 23px; }\n.section-head--small { margin-bottom: 16px; }\n\n.cards { display: flex; flex-direction: column; gap: 12px; }\n.card {\n  position: relative;\n  overflow: hidden;\n  display: grid;\n  grid-template-columns: 62px 1fr auto;\n  gap: 16px;\n  align-items: center;\n  padding: 16px 18px;\n  border-radius: 16px;\n  background: linear-gradient(135deg, rgba(255, 255, 255, .97), rgba(224, 244, 255, .85) 55%, rgba(190, 229, 250, .75));\n  border: 1px solid rgba(255, 255, 255, .95);\n  box-shadow: inset 0 1px 0 #fff, inset 0 -12px 24px rgba(87, 168, 213, .12), 0 12px 26px -16px rgba(4, 55, 88, .6), 0 0 0 1px var(--rule);\n  transition: transform .25s var(--spring), box-shadow .25s ease;\n}\n.card::before {\n  content: \"\";\n  position: absolute;\n  left: 0; top: 0; bottom: 0;\n  width: 4px;\n  background: linear-gradient(180deg, #9adaf8, #0b7ab3);\n  box-shadow: 1px 0 0 rgba(255, 255, 255, .8);\n}\n.card:hover { transform: translateX(4px); box-shadow: inset 0 1px 0 #fff, 0 16px 30px -14px rgba(4, 55, 88, .7), 0 0 0 1px rgba(14, 116, 169, .3); }\n.card__num {\n  font: 700 12px/1.2 \"Courier New\", monospace;\n  color: #3a7799;\n  text-shadow: 0 1px 0 #fff;\n}\n.card__title { font-weight: 700; }\n.card__meta { font-size: 12px; color: var(--muted); margin-top: 3px; }\n.card__right { text-align: right; display: flex; flex-direction: column; gap: 8px; align-items: flex-end; }\n.card__amount { font: 700 18px/1 \"Trebuchet MS\", sans-serif; white-space: nowrap; color: #0a6296; text-shadow: 0 1px 0 #fff; }\n.pill {\n  display: inline-block;\n  padding: 4px 10px;\n  border-radius: 999px;\n  font: 700 10px/1.2 Tahoma, sans-serif;\n  letter-spacing: .08em;\n  text-transform: uppercase;\n  color: #fff;\n  border: 1px solid rgba(255, 255, 255, .8);\n  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .55), 0 2px 6px -3px rgba(4, 55, 88, .6);\n}\n.pill--sent { background: linear-gradient(180deg, #ffd27a, #f09a25); }\n.pill--paid { background: linear-gradient(180deg, #bde77e, #6fae2c); }\n.pill--draft, .pill--done { background: linear-gradient(180deg, #d8ecf8, #8ab6d0); color: #0b4e76; }\n.linkbtn {\n  border: 0;\n  background: none;\n  padding: 0;\n  font: 700 11px/1 \"Trebuchet MS\", sans-serif;\n  color: #0875ad;\n  cursor: pointer;\n  letter-spacing: .03em;\n  text-shadow: 0 1px 0 #fff;\n}\n.linkbtn:hover { text-decoration: underline; }\n\n.side { display: flex; flex-direction: column; gap: 24px; }\n.rhythm { display: flex; flex-direction: column; gap: 9px; }\n.beat {\n  display: flex;\n  gap: 12px;\n  align-items: flex-start;\n  padding: 12px 14px;\n  border-left: 4px solid #e89518;\n  background: linear-gradient(180deg, rgba(255, 255, 255, .92), rgba(216, 241, 255, .7));\n  border-radius: 4px 12px 12px 4px;\n  box-shadow: inset 0 1px 0 #fff, 0 6px 14px -10px rgba(4, 55, 88, .6);\n}\n.beat__dot { width: 8px; height: 8px; border-radius: 50%; background: radial-gradient(circle at 35% 30%, #ffe09c, #e89518); margin-top: 6px; flex: none; box-shadow: 0 1px 2px rgba(4, 55, 88, .3); }\n.beat__text { font-size: 13px; }\n.beat__date { font-size: 11px; color: var(--muted); margin-top: 3px; }\n.beat--task { border-left-color: #5f9e2d; }\n.beat--task .beat__dot { background: radial-gradient(circle at 35% 30%, #d6f5a8, #6fae2c); }\n\n.events ol { list-style: none; margin: 10px 0 0; padding: 0; }\n.events li {\n  display: flex; gap: 9px; padding: 8px 0;\n  border-bottom: 1px solid rgba(18, 105, 155, .14);\n  font-size: 12px; color: var(--muted);\n}\n.events li time { font: 11px/1.5 \"Courier New\", monospace; color: #3a7799; flex: none; }\n\n/* Нижняя панель — как старый taskbar, только стеклянный. */\n.composer {\n  position: fixed;\n  left: 0; right: 0; bottom: 0;\n  z-index: 8;\n  padding: 16px clamp(20px, 4vw, 64px) 20px;\n  background: linear-gradient(180deg, rgba(10, 105, 160, 0), rgba(9, 84, 132, .78) 32%, rgba(5, 61, 100, .94));\n  border-top: 1px solid rgba(255, 255, 255, .65);\n  box-shadow: 0 -10px 34px -14px rgba(3, 45, 75, .7);\n  backdrop-filter: blur(6px);\n}\n.composer__inner {\n  max-width: 1120px;\n  margin: 0 auto;\n  padding: 16px 18px 12px;\n  border-radius: 18px;\n  background: linear-gradient(155deg, rgba(255, 255, 255, .96), rgba(215, 241, 255, .88) 55%, rgba(180, 223, 247, .82));\n  border: 1px solid rgba(255, 255, 255, .95);\n  box-shadow: inset 0 1px 0 #fff, 0 14px 32px -14px rgba(2, 50, 85, .8), 0 0 0 1px rgba(9, 88, 137, .25);\n}\n.modes { display: flex; gap: 7px; margin-bottom: 12px; }\n.mode {\n  border: 1px solid rgba(14, 116, 169, .35);\n  background: linear-gradient(180deg, #fff, #d7eefc);\n  padding: 7px 14px;\n  border-radius: 10px;\n  font: 700 11px/1 \"Trebuchet MS\", sans-serif;\n  color: #4a82a3;\n  cursor: pointer;\n  box-shadow: inset 0 1px 0 #fff, 0 2px 0 rgba(18, 111, 160, .22);\n  transition: transform .18s var(--spring), box-shadow .18s ease, color .18s ease;\n}\n.mode:hover { color: var(--ink); transform: translateY(-1px); }\n.mode.is-active {\n  color: #fff;\n  border-color: #0a6fa8;\n  background: linear-gradient(180deg, #6fc5ee, #1583bd 52%, #0a6fa8);\n  text-shadow: 0 1px 0 rgba(0, 55, 90, .45);\n  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .55), 0 3px 0 #07527f, 0 6px 12px -6px rgba(4, 55, 88, .7);\n}\n.composer__row { display: flex; gap: 12px; align-items: stretch; }\ntextarea {\n  flex: 1;\n  resize: none;\n  min-height: 58px;\n  padding: 13px 15px;\n  border: 1px solid #8fc7e8;\n  border-radius: 12px;\n  background: linear-gradient(180deg, #fbfeff, #e8f6ff);\n  color: var(--ink);\n  font: 14px/1.5 \"Segoe UI\", Tahoma, sans-serif;\n  outline: none;\n  box-shadow: inset 0 2px 6px rgba(16, 88, 130, .14), 0 1px 0 #fff;\n  transition: border-color .2s, box-shadow .2s;\n}\ntextarea::placeholder { color: #6f9db8; }\ntextarea:focus { border-color: #2aa7dd; box-shadow: inset 0 2px 6px rgba(16, 88, 130, .12), 0 0 0 3px rgba(47, 177, 226, .24); }\n.composer__foot {\n  display: flex; justify-content: space-between;\n  margin-top: 9px; font-size: 11px; color: #4a82a3;\n}\n\n/* Выдвижная панель отчёта. */\n.drawer { position: fixed; inset: 0; z-index: 20; background: rgba(3, 52, 86, .48); backdrop-filter: blur(4px); }\n.drawer__sheet {\n  position: absolute; right: 0; top: 0; bottom: 0;\n  width: min(520px, 92vw);\n  padding: 42px 34px;\n  background: linear-gradient(160deg, rgba(255, 255, 255, .97), rgba(214, 240, 255, .92));\n  border-left: 1px solid #fff;\n  box-shadow: -20px 0 60px -30px rgba(2, 45, 75, .8), inset 1px 0 0 rgba(255, 255, 255, .8);\n  animation: slide .32s var(--spring);\n}\n@keyframes slide { from { transform: translateX(30px); opacity: .4; } }\n.drawer__close { position: absolute; top: 18px; right: 22px; border: 1px solid rgba(14, 116, 169, .35); background: linear-gradient(180deg, #fff, #d7eefc); border-radius: 10px; width: 34px; height: 34px; font-size: 22px; cursor: pointer; color: var(--ink); box-shadow: inset 0 1px 0 #fff, 0 2px 0 rgba(18, 111, 160, .22); }\n.drawer__title { font: 700 26px/1 \"Trebuchet MS\", sans-serif; color: #0a6296; text-shadow: 0 1px 0 #fff; margin-bottom: 22px; }\n.drawer pre { white-space: pre-wrap; font: 13px/1.7 \"Courier New\", monospace; color: var(--ink); }\n\n.toast {\n  position: fixed; left: 50%; bottom: 200px; z-index: 30;\n  transform: translateX(-50%);\n  padding: 12px 20px;\n  border-radius: 12px;\n  background: linear-gradient(180deg, #fff, #d9f0ff);\n  border: 1px solid rgba(255, 255, 255, .95);\n  color: #0a6296;\n  font: 700 13px/1 \"Trebuchet MS\", sans-serif;\n  box-shadow: inset 0 1px 0 #fff, 0 14px 30px -14px rgba(3, 52, 86, .7);\n  animation: rise .3s var(--spring);\n}\n@keyframes rise { from { transform: translate(-50%, 12px); opacity: 0; } }\n\n.empty { padding: 30px; text-align: center; color: var(--muted); font-size: 13px; border: 1px dashed rgba(18, 105, 155, .35); border-radius: 16px; background: rgba(255, 255, 255, .4); }\n\n/* Старомодный скроллбар, чтобы не выбивался из вайба. */\n::-webkit-scrollbar { width: 12px; }\n::-webkit-scrollbar-track { background: #d9effc; }\n::-webkit-scrollbar-thumb { border-radius: 10px; border: 2px solid #d9effc; background: linear-gradient(180deg, #fff, #8fc9e9 45%, #4d9fcb); }\n\n@media (max-width: 1100px) {\n  .layout { grid-template-columns: 190px minmax(0, 1fr); }\n  .side { grid-column: 1 / -1; flex-direction: row; flex-wrap: wrap; }\n  .side > * { flex: 1 1 260px; }\n}\n@media (max-width: 720px) {\n  body { padding-bottom: 240px; }\n  .layout { grid-template-columns: 1fr; }\n  .rail { flex-direction: row; flex-wrap: wrap; }\n  .stat { flex: 1 1 140px; }\n  .topbar { align-items: flex-start; flex-direction: column; }\n  .brand__mark { font-size: 25px; }\n  .brand__orb { width: 44px; height: 44px; }\n  .card { grid-template-columns: 48px 1fr; }\n  .card__right { grid-column: 2; align-items: flex-start; }\n  .composer__row { flex-direction: column; }\n  .btn--primary { align-self: flex-end; }\n}\n@media (prefers-reduced-motion: reduce) {\n  *, *::before, *::after { animation: none !important; transition: none !important; }\n}\n", "app.js": "const $ = (selector) => document.querySelector(selector);\nconst $$ = (selector) => Array.from(document.querySelectorAll(selector));\n\nlet mode = \"invoice\";\nlet toastTimer;\n\nasync function api(path, options = {}) {\n  const response = await fetch(path, {\n    headers: { \"Content-Type\": \"application/json\" },\n    ...options,\n  });\n  if (!response.ok) {\n    const body = await response.json().catch(() => ({ detail: response.statusText }));\n    const detail = typeof body.detail === \"string\"\n      ? body.detail\n      : JSON.stringify(body.detail ?? body);\n    throw new Error(detail || response.statusText);\n  }\n  return response.json();\n}\n\nconst escapeHtml = (value) =>\n  String(value ?? \"\").replace(/[&<>\"']/g, (char) =>\n    ({ \"&\": \"&amp;\", \"<\": \"&lt;\", \">\": \"&gt;\", '\"': \"&quot;\", \"'\": \"&#39;\" })[char]\n  );\n\nconst money = (value) =>\n  new Intl.NumberFormat(\"ru-RU\", { style: \"currency\", currency: \"RUB\", maximumFractionDigits: 2 }).format(value || 0);\n\nfunction toast(message, isError = false) {\n  const node = $(\"#toast\");\n  node.textContent = message;\n  node.style.background = isError ? \"#8c3b2b\" : \"#24211c\";\n  node.hidden = false;\n  clearTimeout(toastTimer);\n  toastTimer = setTimeout(() => { node.hidden = true; }, 3600);\n}\n\nfunction statusLabels(kind, status) {\n  if (kind === \"capture\") return [\"done\", \"импорт\"];\n  return [status === \"paid\" ? \"paid\" : \"sent\", status === \"paid\" ? \"оплачено\" : \"в работе\"];\n}\n\nfunction renderDocuments(documents) {\n  const container = $(\"#documents\");\n  if (!documents.length) {\n    container.innerHTML = '<div class=\"empty\">Пока тихо. Вставь текст ниже — и появится первый документ.</div>';\n    return;\n  }\n  container.innerHTML = documents.map((doc) => {\n    const [pillClass, pillText] = statusLabels(doc.kind, doc.status);\n    const docId = escapeHtml(String(doc.id));\n    const number = `${doc.kind === \"capture\" ? \"И\" : \"С\"}-${String(doc.id).padStart(4, \"0\")}`;\n    const due = doc.due_date ? `оплата до ${escapeHtml(doc.due_date)}` : escapeHtml(String(doc.created_at).slice(0, 10));\n    const files = doc.kind === \"invoice\"\n      ? `<a class=\"linkbtn\" href=\"/api/documents/${docId}/download?key=invoice_file\" target=\"_blank\" rel=\"noopener\">счёт ↗</a>\n         <a class=\"linkbtn\" href=\"/api/documents/${docId}/download?key=act_file\" target=\"_blank\" rel=\"noopener\">акт ↗</a>`\n      : `<span class=\"card__meta\">${escapeHtml(doc.payload?.rows ?? 0)} строк</span>`;\n    const excel = `<a class=\"linkbtn\" href=\"/api/documents/${docId}/export.xlsx\">Excel ↓</a>`;\n    const pay = doc.kind === \"invoice\" && doc.status !== \"paid\"\n      ? `<button class=\"linkbtn\" data-paid=\"${docId}\">отметить оплату</button>` : \"\";\n    return `<article class=\"card\">\n      <div class=\"card__num\">${number}</div>\n      <div>\n        <div class=\"card__title\">${escapeHtml(doc.title)}</div>\n        <div class=\"card__meta\">${escapeHtml(doc.client_name)} · ${due}</div>\n      </div>\n      <div class=\"card__right\">\n        <div class=\"card__amount\">${money(doc.amount)}</div>\n        <span class=\"pill pill--${pillClass}\">${pillText}</span>\n        <div>${files}${excel}${pay}</div>\n      </div>\n    </article>`;\n  }).join(\"\");\n}\n\nfunction renderRhythm(data) {\n  const container = $(\"#rhythm\");\n  const beats = [];\n  for (const task of data.tasks || []) {\n    beats.push(`<div class=\"beat beat--task\">\n      <span class=\"beat__dot\"></span>\n      <div><div class=\"beat__text\">${escapeHtml(task.title)}</div>\n      <div class=\"beat__date\">${task.due_date ? `до ${escapeHtml(task.due_date)}` : \"без срока\"} · задача</div></div>\n    </div>`);\n  }\n  for (const doc of data.documents || []) {\n    if (doc.due_date && doc.status !== \"paid\" && doc.kind === \"invoice\") {\n      beats.push(`<div class=\"beat\">\n        <span class=\"beat__dot\"></span>\n        <div><div class=\"beat__text\">${escapeHtml(doc.client_name)} — ${money(doc.amount)}</div>\n        <div class=\"beat__date\">до ${escapeHtml(doc.due_date)} · оплата</div></div>\n      </div>`);\n    }\n  }\n  container.innerHTML = beats.length ? beats.join(\"\") : '<div class=\"empty\">Ритм спокойный.</div>';\n}\n\nconst eventNames = {\n  \"document.created\": \"новый документ\",\n  \"document.updated\": \"документ обновлён\",\n  \"payment.received\": \"оплата пришла\",\n  \"task.created\": \"задача записана\",\n  \"task.done\": \"задача закрыта\",\n  \"reminder.sent\": \"напоминание ушло\",\n};\n\nfunction renderEvents(events) {\n  $(\"#events\").innerHTML = (events || []).map((event) => {\n    const time = String(event.created_at || \"\").slice(11, 16);\n    return `<li><time>${escapeHtml(time)}</time><span>${escapeHtml(eventNames[event.kind] || event.kind)} · ${escapeHtml(event.detail)}</span></li>`;\n  }).join(\"\") || '<li>Событий пока нет.</li>';\n}\n\nasync function load() {\n  try {\n    const data = await api(\"/api/overview\");\n    const counts = data.counts;\n    $(\"#stat-unpaid\").textContent = counts.unpaid;\n    $(\"#stat-overdue\").textContent = counts.overdue ? `${counts.overdue} просрочено` : \"просрочек нет\";\n    $(\"#stat-tasks\").textContent = counts.open_tasks;\n    $(\"#stat-docs\").textContent = counts.documents;\n    $(\"#feed-meta\").textContent = `${counts.documents} документов · ${counts.pending_reminders} напоминаний`;\n    renderDocuments(data.documents);\n    renderRhythm(data);\n    renderEvents(data.events);\n  } catch (error) {\n    toast(`Не загрузилось: ${error.message}`, true);\n  }\n}\n\nasync function markPaid(id) {\n  try {\n    await api(`/api/documents/${id}/paid`, { method: \"POST\" });\n    toast(\"Отмечено оплаченным\");\n    await load();\n  } catch (error) {\n    toast(error.message, true);\n  }\n}\n\nasync function submit() {\n  const button = $(\"#submit\");\n  if (button.disabled) return;\n  const input = $(\"#input\");\n  const text = input.value.trim();\n  if (!text) { toast(\"Напиши хоть что-нибудь\", true); return; }\n  const activeMode = mode;\n  const endpoints = {\n    invoice: [\"/api/invoices\", { text, due_days: 7 }],\n    capture: [\"/api/capture\", { text }],\n    task: [\"/api/tasks\", { text, source: \"web\" }],\n  };\n  const [path, body] = endpoints[activeMode];\n  button.disabled = true;\n  $(\"#status\").textContent = \"делаем…\";\n  try {\n    const result = await api(path, { method: \"POST\", body: JSON.stringify(body) });\n    const messages = {\n      invoice: `Счёт №${result.id} готов`,\n      capture: `Импортировано строк: ${result.rows}`,\n      task: `Задача #${result.id} записана`,\n    };\n    toast(messages[activeMode]);\n    input.value = \"\";\n    await load();\n  } catch (error) {\n    toast(error.message, true);\n  } finally {\n    button.disabled = false;\n    $(\"#status\").textContent = \"\";\n  }\n}\n\nfunction tickClock() {\n  const now = new Date();\n  $(\"#clock\").textContent = new Intl.DateTimeFormat(\"ru-RU\", {\n    day: \"2-digit\", month: \"long\", hour: \"2-digit\", minute: \"2-digit\",\n  }).format(now);\n}\n\n$$(\".mode\").forEach((button) => {\n  button.addEventListener(\"click\", () => {\n    mode = button.dataset.mode;\n    $$(\".mode\").forEach((item) => item.classList.toggle(\"is-active\", item === button));\n    const placeholders = {\n      invoice: \"Вставь договор или переписку: клиент, сумма, срок…\",\n      capture: \"Вставь таблицу с разделителем | или ;\",\n      task: \"Что нужно сделать? Можно с датой: «до 25 ноября»\",\n    };\n    $(\"#input\").placeholder = placeholders[mode];\n    $(\"#input\").focus();\n  });\n});\n\n$(\"#submit\").addEventListener(\"click\", submit);\n$(\"#documents\").addEventListener(\"click\", (event) => {\n  const id = event.target.dataset.paid;\n  if (id) markPaid(id);\n});\n\n$(\"#report-btn\").addEventListener(\"click\", async () => {\n  try {\n    const data = await api(\"/api/reports/weekly\");\n    $(\"#report-text\").textContent = data.text;\n    $(\"#drawer\").hidden = false;\n  } catch (error) {\n    toast(error.message, true);\n  }\n});\n$(\"#drawer-close\").addEventListener(\"click\", () => { $(\"#drawer\").hidden = true; });\n$(\"#drawer\").addEventListener(\"click\", (event) => {\n  if (event.target === $(\"#drawer\")) $(\"#drawer\").hidden = true;\n});\n\ndocument.addEventListener(\"keydown\", (event) => {\n  if (event.key === \"Escape\") $(\"#drawer\").hidden = true;\n  if ((event.ctrlKey || event.metaKey) && event.key === \"Enter\") { event.preventDefault(); submit(); }\n  if (event.key === \"/\" && document.activeElement !== $(\"#input\")) {\n    event.preventDefault();\n    $(\"#input\").focus();\n  }\n});\n\ntickClock();\nsetInterval(tickClock, 30000);\nload();\n"};
 
 // Такт на Cloudflare Workers: один файл, без npm-зависимостей.
 // Хранилище — D1 (binding env.DB). Схема совпадает со src/takt/db.py.
@@ -44,10 +44,20 @@ function fail(status, detail) {
   throw new HttpError(status, detail);
 }
 
+const SECURITY_HEADERS = {
+  "X-Content-Type-Options": "nosniff",
+  "Referrer-Policy": "no-referrer",
+  "X-Frame-Options": "DENY",
+};
+const WEB_CSP =
+  "default-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline'; " +
+  "img-src 'self' data:; connect-src 'self'; font-src 'self'; base-uri 'none'; " +
+  "form-action 'self'; frame-ancestors 'none'; object-src 'none'";
+
 function json(data, status = 200, extraHeaders = {}) {
   return new Response(JSON.stringify(data), {
     status,
-    headers: { "Content-Type": "application/json; charset=utf-8", ...extraHeaders },
+    headers: { "Content-Type": "application/json; charset=utf-8", ...SECURITY_HEADERS, ...extraHeaders },
   });
 }
 
@@ -256,6 +266,14 @@ async function unclaimReminder(env, reminderId, stamp) {
   await dbRun(env, "UPDATE reminders SET sent_at = NULL WHERE id = ? AND sent_at = ?", [reminderId, stamp]);
 }
 
+async function cancelReminders(env, kind, refId) {
+  await dbRun(
+    env,
+    "UPDATE reminders SET sent_at = ? WHERE kind = ? AND ref_id = ? AND sent_at IS NULL",
+    [nowIso(), kind, refId]
+  );
+}
+
 async function getEvents(env, limit = 20) {
   return dbAll(env, "SELECT * FROM events ORDER BY id DESC LIMIT ?", [limit]);
 }
@@ -327,18 +345,21 @@ function money(value, currency = "₽") {
   return `${amount < 0 ? "-" : ""}${grouped},${cents} ${currency}`;
 }
 
-function underThousand(number) {
+const ONES_FEMININE = ["", "одна", "две", ...ONES.slice(3)];
+
+function underThousand(number, feminine = false) {
   const parts = [];
+  const onesWords = feminine ? ONES_FEMININE : ONES;
   const hundreds = Math.floor(number / 100);
   const rest = number % 100;
   if (hundreds) parts.push(HUNDREDS[hundreds]);
   if (rest < 20) {
-    if (rest) parts.push(ONES[rest]);
+    if (rest) parts.push(onesWords[rest]);
   } else {
     const tens = Math.floor(rest / 10);
     const ones = rest % 10;
     parts.push(TENS[tens]);
-    if (ones) parts.push(ONES[ones]);
+    if (ones) parts.push(onesWords[ones]);
   }
   return parts.join(" ");
 }
@@ -354,20 +375,24 @@ function plural(number, one, few, many) {
 
 function rublesInWords(value) {
   const amount = normaliseNumber(value);
-  const rubles = Math.floor(amount);
-  const kopecks = Math.floor((amount - rubles) * 100 + 1e-6);
-  let thousands = Math.floor(rubles / 1000);
-  const rest = rubles % 1000;
-  const millions = Math.floor(thousands / 1000);
-  thousands %= 1000;
+  const absolute = Math.abs(amount);
+  const rubles = Math.floor(absolute);
+  const kopecks = Math.floor((absolute - rubles) * 100 + 1e-6);
+  const billions = Math.floor(rubles / 1e9);
+  const millions = Math.floor((rubles % 1e9) / 1e6);
+  const thousands = Math.floor((rubles % 1e6) / 1000);
+  const units = rubles % 1000;
   const words = [];
+  if (billions) words.push(`${underThousand(billions)} ${plural(billions, "миллиард", "миллиарда", "миллиардов")}`);
   if (millions) words.push(`${underThousand(millions)} ${plural(millions, "миллион", "миллиона", "миллионов")}`);
-  if (thousands) words.push(`${underThousand(thousands)} ${plural(thousands, "тысяча", "тысячи", "тысяч")}`);
+  if (thousands) words.push(`${underThousand(thousands, true)} ${plural(thousands, "тысяча", "тысячи", "тысяч")}`);
   const rubleForm = plural(rubles, "рубль", "рубля", "рублей");
-  words.push(rest ? `${underThousand(rest)} ${rubleForm}` : rubleForm);
+  if (!rubles && !words.length) words.push("ноль рублей");
+  else words.push(units || !words.length ? `${underThousand(units)} ${rubleForm}`.trim() : rubleForm);
   words.push(`${pad2(kopecks)} ${plural(kopecks, "копейка", "копейки", "копеек")}`);
   const result = words.filter(Boolean).join(" ");
-  return result.charAt(0).toUpperCase() + result.slice(1);
+  const capitalised = result.charAt(0).toUpperCase() + result.slice(1);
+  return amount < 0 ? `Минус ${capitalised}` : capitalised;
 }
 
 const PRINT_CSS = `
@@ -488,8 +513,9 @@ function parseDate(text, base = new Date()) {
   const lowered = text.toLowerCase();
   let match = lowered.match(/через\s+(\d+)\s*(день|дня|дней)/);
   if (match) return isoDateOnly(base, Number(match[1]));
-  if (lowered.includes("завтра")) return isoDateOnly(base, 1);
+  // «послезавтра» содержит «завтра» — проверяем его раньше.
   if (lowered.includes("послезавтра")) return isoDateOnly(base, 2);
+  if (lowered.includes("завтра")) return isoDateOnly(base, 1);
   for (const [name, month] of Object.entries(MONTHS)) {
     match = lowered.match(new RegExp(`(\\d{1,2})\\s+${name}`, "i"));
     if (match) {
@@ -519,8 +545,13 @@ function parseAmount(text) {
       if (amount) return amount;
     }
   }
-  const match = text.match(/(^|[^0-9])(\d{3,}(?:[.,]\d{1,2})?)(?![0-9A-Za-zА-Яа-яЁё])/);
-  if (match) return normaliseNumber(match[2]);
+  const pattern = /(^|[^0-9])(\d{3,}(?:[.,]\d{1,2})?)(?![0-9A-Za-zА-Яа-яЁё])/g;
+  for (const match of text.matchAll(pattern)) {
+    const digits = match[2].replace(/\D/g, "");
+    if (digits.length >= 10) continue; // ИНН — не сумма
+    if (/инн/i.test(text.slice(Math.max(0, match.index - 14), match.index))) continue;
+    return normaliseNumber(match[2]);
+  }
   return 0;
 }
 
@@ -562,7 +593,10 @@ function parseText(text) {
 
 function parseTable(text) {
   const rows = [];
-  const lines = cleanText(text).split("\n").map((line) => line.trim()).filter(Boolean);
+  const lines = cleanText(text)
+    .split("\n")
+    .map((line) => line.trim())
+    .filter((line) => line && !/^[\s|:-]+$/.test(line));
   if (!lines.length) return rows;
   const separator = lines[0].includes("|") ? "|" : lines[0].includes("\t") ? "\t" : ";";
   const header = lines[0].split(separator).map((cell) => cell.trim());
@@ -590,7 +624,9 @@ function cleanTaskTitle(text) {
 }
 
 function csvCell(value) {
-  const text = String(value ?? "");
+  let text = String(value ?? "");
+  // Ячейка, начинающаяся с формульного символа, открывается Excel как формула.
+  if (/^[=+\-@\t\r]/.test(text)) text = `'${text}`;
   return /[;"\r\n]/.test(text) ? `"${text.replace(/"/g, '""')}"` : text;
 }
 
@@ -702,10 +738,10 @@ async function aiVisionToText(env, bytes, mime = "image/jpeg") {
 async function aiTranscribeGemini(env, bytes) {
   const model = aiModel(env);
   const response = await fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent?key=${encodeURIComponent(env.AI_API_KEY)}`,
+    `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`,
     {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: { "x-goog-api-key": env.AI_API_KEY, "Content-Type": "application/json" },
       body: JSON.stringify({
         contents: [{
           parts: [
@@ -745,13 +781,16 @@ async function understand(env, text) {
   if (!aiEnabled(env)) return parsed;
   try {
     const fields = await aiExtractFields(env, text);
-    for (const key of ["client_name", "inn", "email", "title", "due_date"]) {
+    for (const key of ["client_name", "inn", "email", "title"]) {
       const value = String(fields?.[key] ?? "").trim();
       if (value) parsed[key] = value.slice(0, 160);
     }
+    const rawDate = String(fields?.due_date ?? "").trim();
+    const validDate = normaliseDateString(rawDate);
+    if (validDate) parsed.due_date = validDate;
     if (fields?.amount !== undefined && fields?.amount !== null && fields?.amount !== "") {
       const amount = Number(fields.amount);
-      if (Number.isFinite(amount)) parsed.amount = round2(amount);
+      if (Number.isFinite(amount) && amount >= 0) parsed.amount = round2(amount);
     }
     parsed.raw.engine = "ai+local";
   } catch {
@@ -766,7 +805,7 @@ async function createInvoice(env, text, dueDays = 7) {
   const source = String(text ?? "").trim();
   if (!source) fail(400, "Нет текста для счёта");
   const parsed = await understand(env, source);
-  const dueDate = parsed.due_date || isoDateOnly(new Date(), dueDays);
+  const dueDate = normaliseDateString(parsed.due_date) || isoDateOnly(new Date(), dueDays);
   const clientName = parsed.client_name || "Клиент без названия";
   const client = await findClient(env, clientName);
   const clientId = client ? Number(client.id) : await addClient(env, clientName, parsed.inn || null, parsed.email || null);
@@ -803,6 +842,7 @@ async function markPaid(env, docId) {
   const doc = await getDocument(env, docId);
   if (!doc) fail(404, `Документ #${docId} не найден`);
   await updateDocument(env, docId, { status: "paid" });
+  await cancelReminders(env, "payment", docId);
   await logEvent(env, "payment.received", `#${docId} — ${money(doc.amount || 0)}`);
   return getDocument(env, docId);
 }
@@ -819,7 +859,13 @@ async function capture(env, text) {
     title: `Импорт: ${rows.length} строк`,
     client_name: "—",
     status: "done",
-    payload: { file, csv_text: content, preview: rows.slice(0, 5), rows: rows.length },
+    payload: {
+      file,
+      csv_text: content,
+      preview: rows.slice(0, 5),
+      rows: rows.length,
+      table: rows.slice(0, 500),
+    },
   });
   return { document_id: docId, rows: rows.length, file, csv_text: content, preview: rows.slice(0, 5) };
 }
@@ -850,7 +896,7 @@ async function weeklyReport(env) {
   const today = isoDateOnly();
   const weekAgo = isoDateOnly(new Date(), -7);
   const docs = (await getDocuments(env, { limit: 200 })).filter(
-    (doc) => String(doc.created_at || "").slice(0, 10) >= weekAgo
+    (doc) => doc.kind === "invoice" && String(doc.created_at || "").slice(0, 10) >= weekAgo
   );
   const paid = docs.filter((doc) => doc.status === "paid").reduce((sum, doc) => sum + Number(doc.amount || 0), 0);
   const waiting = docs.filter((doc) => doc.status !== "paid").reduce((sum, doc) => sum + Number(doc.amount || 0), 0);
@@ -913,9 +959,11 @@ async function agentDigest(env) {
   return lines.join("\n");
 }
 
-async function runAgentDigest(env) {
+async function runAgentDigest(env, force = false) {
+  const key = `agent_digest:${isoDateOnly()}`;
+  if (!force && (await getSetting(env, key, ""))) return 0;
   const chats = await knownChats(env);
-  if (!chats.length) return 0;
+  if (!chats.length) return 0; // ждём /status — тогда дайджест станет некому отправлять
   const text = await agentDigest(env);
   let sent = 0;
   for (const chat of chats) {
@@ -926,7 +974,10 @@ async function runAgentDigest(env) {
       // Один недоступный чат не должен ломать остальные.
     }
   }
-  if (sent) await logEvent(env, "agent.digest", `${sent} чат(ов)`);
+  if (sent) {
+    await setSetting(env, key, "1");
+    await logEvent(env, "agent.digest", `${sent} чат(ов)`);
+  }
   return sent;
 }
 
@@ -946,7 +997,10 @@ async function telegramApi(env, method, body, isFile = false) {
     body: isFile ? body : JSON.stringify(body),
   });
   if (!response.ok) throw new Error(`Telegram HTTP ${response.status}`);
-  return response.json();
+  const data = await response.json();
+  // Telegram возвращает 200 с ok:false, например при заблокированном боте.
+  if (!data?.ok) throw new Error(`Telegram: ${String(data?.description || "не удалось отправить").slice(0, 200)}`);
+  return data;
 }
 
 function sendTelegramMessage(env, chatId, text) {
@@ -1017,9 +1071,23 @@ async function handleTelegramText(env, chatId, text) {
   }
 }
 
+function telegramAllowed(env, chatId) {
+  const raw = String(env.TELEGRAM_ALLOWED_CHAT_IDS || "").trim();
+  if (!raw) return true;
+  return raw.split(/[;,]/).map((part) => part.trim()).filter(Boolean).includes(String(chatId));
+}
+
+async function optInChat(env, chatId) {
+  await setSetting(env, `tg_chat:${chatId}`, "1");
+  if (!(await getSetting(env, "notify_chat_id", ""))) {
+    await setSetting(env, "notify_chat_id", String(chatId));
+  }
+}
+
 async function handleTelegramCommand(env, chatId, command, argument) {
   switch (command) {
     case "start":
+      await optInChat(env, chatId);
       await sendTelegramMessage(env, chatId, `Привет. Я Такт. Забираю рутину у тебя — тихо и без лишних вопросов.\n\n${TG_HELP}`);
       return;
     case "help":
@@ -1035,6 +1103,7 @@ async function handleTelegramCommand(env, chatId, command, argument) {
       await askMode(env, chatId, "task", "Что нужно сделать? Можно с датой: «до 25 ноября».");
       return;
     case "status": {
+      await optInChat(env, chatId);
       const data = await overview(env);
       const c = data.counts;
       await sendTelegramMessage(
@@ -1065,8 +1134,15 @@ async function handleTelegramUpdate(env, update) {
   const message = update?.message || update?.edited_message;
   const chatId = message?.chat?.id;
   if (chatId === undefined || chatId === null) return;
+  if (!telegramAllowed(env, chatId)) {
+    try {
+      await sendTelegramMessage(env, chatId, "Этот бот закрыт для вашего чата.");
+    } catch {
+      // Не отвечаем посторонним, если Telegram недоступен.
+    }
+    return;
+  }
   try {
-    await setSetting(env, `tg_chat:${chatId}`, "1");
     const text = String(message.text || message.caption || "");
     const command = text.trim().match(/^\/(\w+)(?:@[\w_]+)?\s*([\s\S]*)$/);
     if (command) {
@@ -1093,6 +1169,7 @@ async function handleTelegramUpdate(env, update) {
       return;
     }
     if (message.voice) {
+      await deleteSetting(env, `tg_mode:${chatId}`);
       if (!aiEnabled(env)) {
         await sendTelegramMessage(env, chatId, "Расшифровка голоса недоступна: AI не настроен");
         return;
@@ -1140,7 +1217,10 @@ async function flushReminders(env) {
 function assetResponse(key, contentType) {
   const body = ASSETS && ASSETS[key];
   if (typeof body !== "string") return httpError(404, "Файл не найден");
-  return new Response(body, { status: 200, headers: { "Content-Type": contentType } });
+  return new Response(body, {
+    status: 200,
+    headers: { "Content-Type": contentType, "Content-Security-Policy": WEB_CSP, ...SECURITY_HEADERS },
+  });
 }
 
 function payloadFile(payload, key) {
@@ -1164,6 +1244,7 @@ function fileResponse(file) {
     headers: {
       "Content-Type": file.media,
       "Content-Disposition": `attachment; filename="${safeName}"`,
+      ...SECURITY_HEADERS,
     },
   });
 }
@@ -1239,10 +1320,53 @@ function zipStore(files) {
 
 function xmlEscape(value) {
   return String(value ?? "")
+    // XML 1.0 не допускает эти символы — Excel восстановит такой файл.
+    .replace(/[\u0000-\u0008\u000b\u000c\u000e-\u001f\ufffe\uffff]/g, "")
     .replace(/&/g, "&amp;")
     .replace(/</g, "&lt;")
     .replace(/>/g, "&gt;")
     .replace(/"/g, "&quot;");
+}
+
+function parseCsvText(raw) {
+  const text = String(raw ?? "").replace(/^\uFEFF/, "");
+  const rows = [];
+  let row = [];
+  let cell = "";
+  let quoted = false;
+  for (let i = 0; i < text.length; i += 1) {
+    const char = text[i];
+    if (quoted) {
+      if (char === '"' && text[i + 1] === '"') {
+        cell += '"';
+        i += 1;
+      } else if (char === '"') {
+        quoted = false;
+      } else {
+        cell += char;
+      }
+      continue;
+    }
+    if (char === '"') {
+      quoted = true;
+    } else if (char === ";") {
+      row.push(cell.trim());
+      cell = "";
+    } else if (char === "\r" || char === "\n") {
+      if (char === "\r" && text[i + 1] === "\n") i += 1;
+      row.push(cell.trim());
+      if (row.some(Boolean)) rows.push(row);
+      row = [];
+      cell = "";
+    } else {
+      cell += char;
+    }
+  }
+  if (cell || row.length) {
+    row.push(cell.trim());
+    if (row.some(Boolean)) rows.push(row);
+  }
+  return rows;
 }
 
 function columnName(index) {
@@ -1268,11 +1392,19 @@ function xlsxRows(doc) {
     ["Сумма, ₽", Number(doc.amount || 0), ""],
     ["", "", ""],
   ];
-  const csv = String(doc.payload?.csv_text || "");
-  if (csv) {
+  const table = Array.isArray(doc.payload?.table) ? doc.payload.table : [];
+  const csvRows = table.length ? [] : parseCsvText(doc.payload?.csv_text);
+  if (table.length || csvRows.length) {
     rows.push(["Строки таблицы", "", ""]);
-    for (const line of csv.split(/\r?\n/).filter(Boolean)) {
-      rows.push(line.split(/[;|]/).map((cell) => cell.trim()));
+    if (table.length) {
+      const header = Object.keys(table[0]);
+      rows.push(header);
+      for (const item of table.slice(0, 500)) rows.push(header.map((name) => item?.[name] ?? ""));
+    } else {
+      const width = Math.max(...csvRows.map((row) => row.length), 1);
+      for (const row of csvRows) {
+        rows.push(Array.from({ length: width }, (_, index) => row[index] ?? ""));
+      }
     }
   }
   return rows;
@@ -1336,6 +1468,7 @@ function xlsxResponse(doc) {
     headers: {
       "Content-Type": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
       "Content-Disposition": `attachment; filename="${name}"`,
+      ...SECURITY_HEADERS,
     },
   });
 }
@@ -1362,7 +1495,7 @@ function parseLimit(value) {
   if (value === null) return 50;
   const number = Number(value);
   if (!Number.isInteger(number)) fail(422, "limit должен быть целым числом");
-  return number;
+  return Math.min(Math.max(number, 1), 200);
 }
 
 function validateChatId(body) {
@@ -1372,8 +1505,39 @@ function validateChatId(body) {
   return text;
 }
 
+async function secretsEqual(left, right) {
+  const encoder = new TextEncoder();
+  const [first, second] = await Promise.all([
+    crypto.subtle.digest("SHA-256", encoder.encode(String(left))),
+    crypto.subtle.digest("SHA-256", encoder.encode(String(right))),
+  ]);
+  const a = new Uint8Array(first);
+  const b = new Uint8Array(second);
+  let difference = 0;
+  for (let index = 0; index < a.length; index += 1) difference |= a[index] ^ b[index];
+  return difference === 0;
+}
+
+async function requireAdmin(request, env) {
+  // Если отдельный токен не задан, используем уже существующий секрет вебхука.
+  const configured = String(env.TAKT_ADMIN_TOKEN || env.TELEGRAM_WEBHOOK_SECRET || "");
+  if (!configured) return httpError(503, "Админ-токен не настроен");
+  const header = String(request.headers.get("Authorization") || "");
+  const supplied = header.startsWith("Bearer ")
+    ? header.slice(7).trim()
+    : String(request.headers.get("X-Admin-Token") || "");
+  if (!(await secretsEqual(supplied, configured))) return httpError(401, "Нужен административный токен");
+  return null;
+}
+
 async function routeApi(request, env, url, path, method) {
   if (path === "/api/health" && method === "GET") return json({ status: "ok", product: "takt" });
+
+  // Внутренние и админские маршруты не должны быть открытыми на workers.dev.
+  if (/^\/api\/(?:agent|settings|reminders)/.test(path)) {
+    const denied = await requireAdmin(request, env);
+    if (denied) return denied;
+  }
 
   if (path === "/api/overview" && method === "GET") return json(await overview(env));
 
@@ -1447,11 +1611,12 @@ async function routeApi(request, env, url, path, method) {
   }
 
   if (path === "/api/agent/digest" && method === "GET") {
-    return json({ text: await agentDigest(env), chats: await knownChats(env) });
+    return json({ text: await agentDigest(env) });
   }
 
   if (path === "/api/agent/digest/send" && method === "POST") {
-    return json({ sent: await runAgentDigest(env) });
+    const force = url.searchParams.get("force") === "1";
+    return json({ sent: await runAgentDigest(env, force) });
   }
 
   if (path === "/api/reminders/due" && method === "GET") {
@@ -1494,8 +1659,12 @@ export default {
       if (telegram) {
         if (method !== "POST") return httpError(404, "Не найдено");
         const configured = String(env.TELEGRAM_WEBHOOK_SECRET || "");
+        if (!configured) return httpError(404, "Не найдено");
         const supplied = telegram[1] || "";
-        if (configured ? supplied !== configured : supplied !== "") return httpError(404, "Не найдено");
+        const header = String(request.headers.get("X-Telegram-Bot-Api-Secret-Token") || "");
+        if (!(await secretsEqual(supplied, configured))) return httpError(404, "Не найдено");
+        // Telegram добавляет заголовок, если secret_token передан в setWebhook.
+        if (header && !(await secretsEqual(header, configured))) return httpError(404, "Не найдено");
         let update;
         try {
           update = await request.json();

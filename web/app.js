@@ -11,7 +11,10 @@ async function api(path, options = {}) {
   });
   if (!response.ok) {
     const body = await response.json().catch(() => ({ detail: response.statusText }));
-    throw new Error(body.detail || response.statusText);
+    const detail = typeof body.detail === "string"
+      ? body.detail
+      : JSON.stringify(body.detail ?? body);
+    throw new Error(detail || response.statusText);
   }
   return response.json();
 }
@@ -46,15 +49,16 @@ function renderDocuments(documents) {
   }
   container.innerHTML = documents.map((doc) => {
     const [pillClass, pillText] = statusLabels(doc.kind, doc.status);
+    const docId = escapeHtml(String(doc.id));
     const number = `${doc.kind === "capture" ? "И" : "С"}-${String(doc.id).padStart(4, "0")}`;
     const due = doc.due_date ? `оплата до ${escapeHtml(doc.due_date)}` : escapeHtml(String(doc.created_at).slice(0, 10));
     const files = doc.kind === "invoice"
-      ? `<a class="linkbtn" href="/api/documents/${doc.id}/download?key=invoice_file" target="_blank">счёт ↗</a>
-         <a class="linkbtn" href="/api/documents/${doc.id}/download?key=act_file" target="_blank">акт ↗</a>`
+      ? `<a class="linkbtn" href="/api/documents/${docId}/download?key=invoice_file" target="_blank" rel="noopener">счёт ↗</a>
+         <a class="linkbtn" href="/api/documents/${docId}/download?key=act_file" target="_blank" rel="noopener">акт ↗</a>`
       : `<span class="card__meta">${escapeHtml(doc.payload?.rows ?? 0)} строк</span>`;
-    const excel = `<a class="linkbtn" href="/api/documents/${doc.id}/export.xlsx">Excel ↓</a>`;
+    const excel = `<a class="linkbtn" href="/api/documents/${docId}/export.xlsx">Excel ↓</a>`;
     const pay = doc.kind === "invoice" && doc.status !== "paid"
-      ? `<button class="linkbtn" data-paid="${doc.id}">отметить оплату</button>` : "";
+      ? `<button class="linkbtn" data-paid="${docId}">отметить оплату</button>` : "";
     return `<article class="card">
       <div class="card__num">${number}</div>
       <div>
@@ -136,16 +140,18 @@ async function markPaid(id) {
 }
 
 async function submit() {
+  const button = $("#submit");
+  if (button.disabled) return;
   const input = $("#input");
   const text = input.value.trim();
   if (!text) { toast("Напиши хоть что-нибудь", true); return; }
+  const activeMode = mode;
   const endpoints = {
     invoice: ["/api/invoices", { text, due_days: 7 }],
     capture: ["/api/capture", { text }],
     task: ["/api/tasks", { text, source: "web" }],
   };
-  const [path, body] = endpoints[mode];
-  const button = $("#submit");
+  const [path, body] = endpoints[activeMode];
   button.disabled = true;
   $("#status").textContent = "делаем…";
   try {
@@ -155,7 +161,7 @@ async function submit() {
       capture: `Импортировано строк: ${result.rows}`,
       task: `Задача #${result.id} записана`,
     };
-    toast(messages[mode]);
+    toast(messages[activeMode]);
     input.value = "";
     await load();
   } catch (error) {

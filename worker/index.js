@@ -44,10 +44,20 @@ function fail(status, detail) {
   throw new HttpError(status, detail);
 }
 
+const SECURITY_HEADERS = {
+  "X-Content-Type-Options": "nosniff",
+  "Referrer-Policy": "no-referrer",
+  "X-Frame-Options": "DENY",
+};
+const WEB_CSP =
+  "default-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline'; " +
+  "img-src 'self' data:; connect-src 'self'; font-src 'self'; base-uri 'none'; " +
+  "form-action 'self'; frame-ancestors 'none'; object-src 'none'";
+
 function json(data, status = 200, extraHeaders = {}) {
   return new Response(JSON.stringify(data), {
     status,
-    headers: { "Content-Type": "application/json; charset=utf-8", ...extraHeaders },
+    headers: { "Content-Type": "application/json; charset=utf-8", ...SECURITY_HEADERS, ...extraHeaders },
   });
 }
 
@@ -256,6 +266,14 @@ async function unclaimReminder(env, reminderId, stamp) {
   await dbRun(env, "UPDATE reminders SET sent_at = NULL WHERE id = ? AND sent_at = ?", [reminderId, stamp]);
 }
 
+async function cancelReminders(env, kind, refId) {
+  await dbRun(
+    env,
+    "UPDATE reminders SET sent_at = ? WHERE kind = ? AND ref_id = ? AND sent_at IS NULL",
+    [nowIso(), kind, refId]
+  );
+}
+
 async function getEvents(env, limit = 20) {
   return dbAll(env, "SELECT * FROM events ORDER BY id DESC LIMIT ?", [limit]);
 }
@@ -327,18 +345,21 @@ function money(value, currency = "₽") {
   return `${amount < 0 ? "-" : ""}${grouped},${cents} ${currency}`;
 }
 
-function underThousand(number) {
+const ONES_FEMININE = ["", "одна", "две", ...ONES.slice(3)];
+
+function underThousand(number, feminine = false) {
   const parts = [];
+  const onesWords = feminine ? ONES_FEMININE : ONES;
   const hundreds = Math.floor(number / 100);
   const rest = number % 100;
   if (hundreds) parts.push(HUNDREDS[hundreds]);
   if (rest < 20) {
-    if (rest) parts.push(ONES[rest]);
+    if (rest) parts.push(onesWords[rest]);
   } else {
     const tens = Math.floor(rest / 10);
     const ones = rest % 10;
     parts.push(TENS[tens]);
-    if (ones) parts.push(ONES[ones]);
+    if (ones) parts.push(onesWords[ones]);
   }
   return parts.join(" ");
 }
@@ -354,20 +375,24 @@ function plural(number, one, few, many) {
 
 function rublesInWords(value) {
   const amount = normaliseNumber(value);
-  const rubles = Math.floor(amount);
-  const kopecks = Math.floor((amount - rubles) * 100 + 1e-6);
-  let thousands = Math.floor(rubles / 1000);
-  const rest = rubles % 1000;
-  const millions = Math.floor(thousands / 1000);
-  thousands %= 1000;
+  const absolute = Math.abs(amount);
+  const rubles = Math.floor(absolute);
+  const kopecks = Math.floor((absolute - rubles) * 100 + 1e-6);
+  const billions = Math.floor(rubles / 1e9);
+  const millions = Math.floor((rubles % 1e9) / 1e6);
+  const thousands = Math.floor((rubles % 1e6) / 1000);
+  const units = rubles % 1000;
   const words = [];
+  if (billions) words.push(`${underThousand(billions)} ${plural(billions, "миллиард", "миллиарда", "миллиардов")}`);
   if (millions) words.push(`${underThousand(millions)} ${plural(millions, "миллион", "миллиона", "миллионов")}`);
-  if (thousands) words.push(`${underThousand(thousands)} ${plural(thousands, "тысяча", "тысячи", "тысяч")}`);
+  if (thousands) words.push(`${underThousand(thousands, true)} ${plural(thousands, "тысяча", "тысячи", "тысяч")}`);
   const rubleForm = plural(rubles, "рубль", "рубля", "рублей");
-  words.push(rest ? `${underThousand(rest)} ${rubleForm}` : rubleForm);
+  if (!rubles && !words.length) words.push("ноль рублей");
+  else words.push(units || !words.length ? `${underThousand(units)} ${rubleForm}`.trim() : rubleForm);
   words.push(`${pad2(kopecks)} ${plural(kopecks, "копейка", "копейки", "копеек")}`);
   const result = words.filter(Boolean).join(" ");
-  return result.charAt(0).toUpperCase() + result.slice(1);
+  const capitalised = result.charAt(0).toUpperCase() + result.slice(1);
+  return amount < 0 ? `Минус ${capitalised}` : capitalised;
 }
 
 const PRINT_CSS = `
@@ -488,8 +513,9 @@ function parseDate(text, base = new Date()) {
   const lowered = text.toLowerCase();
   let match = lowered.match(/через\s+(\d+)\s*(день|дня|дней)/);
   if (match) return isoDateOnly(base, Number(match[1]));
-  if (lowered.includes("завтра")) return isoDateOnly(base, 1);
+  // «послезавтра» содержит «завтра» — проверяем его раньше.
   if (lowered.includes("послезавтра")) return isoDateOnly(base, 2);
+  if (lowered.includes("завтра")) return isoDateOnly(base, 1);
   for (const [name, month] of Object.entries(MONTHS)) {
     match = lowered.match(new RegExp(`(\\d{1,2})\\s+${name}`, "i"));
     if (match) {
@@ -519,8 +545,13 @@ function parseAmount(text) {
       if (amount) return amount;
     }
   }
-  const match = text.match(/(^|[^0-9])(\d{3,}(?:[.,]\d{1,2})?)(?![0-9A-Za-zА-Яа-яЁё])/);
-  if (match) return normaliseNumber(match[2]);
+  const pattern = /(^|[^0-9])(\d{3,}(?:[.,]\d{1,2})?)(?![0-9A-Za-zА-Яа-яЁё])/g;
+  for (const match of text.matchAll(pattern)) {
+    const digits = match[2].replace(/\D/g, "");
+    if (digits.length >= 10) continue; // ИНН — не сумма
+    if (/инн/i.test(text.slice(Math.max(0, match.index - 14), match.index))) continue;
+    return normaliseNumber(match[2]);
+  }
   return 0;
 }
 
@@ -562,7 +593,10 @@ function parseText(text) {
 
 function parseTable(text) {
   const rows = [];
-  const lines = cleanText(text).split("\n").map((line) => line.trim()).filter(Boolean);
+  const lines = cleanText(text)
+    .split("\n")
+    .map((line) => line.trim())
+    .filter((line) => line && !/^[\s|:-]+$/.test(line));
   if (!lines.length) return rows;
   const separator = lines[0].includes("|") ? "|" : lines[0].includes("\t") ? "\t" : ";";
   const header = lines[0].split(separator).map((cell) => cell.trim());
@@ -590,7 +624,9 @@ function cleanTaskTitle(text) {
 }
 
 function csvCell(value) {
-  const text = String(value ?? "");
+  let text = String(value ?? "");
+  // Ячейка, начинающаяся с формульного символа, открывается Excel как формула.
+  if (/^[=+\-@\t\r]/.test(text)) text = `'${text}`;
   return /[;"\r\n]/.test(text) ? `"${text.replace(/"/g, '""')}"` : text;
 }
 
@@ -702,10 +738,10 @@ async function aiVisionToText(env, bytes, mime = "image/jpeg") {
 async function aiTranscribeGemini(env, bytes) {
   const model = aiModel(env);
   const response = await fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent?key=${encodeURIComponent(env.AI_API_KEY)}`,
+    `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`,
     {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: { "x-goog-api-key": env.AI_API_KEY, "Content-Type": "application/json" },
       body: JSON.stringify({
         contents: [{
           parts: [
@@ -745,13 +781,16 @@ async function understand(env, text) {
   if (!aiEnabled(env)) return parsed;
   try {
     const fields = await aiExtractFields(env, text);
-    for (const key of ["client_name", "inn", "email", "title", "due_date"]) {
+    for (const key of ["client_name", "inn", "email", "title"]) {
       const value = String(fields?.[key] ?? "").trim();
       if (value) parsed[key] = value.slice(0, 160);
     }
+    const rawDate = String(fields?.due_date ?? "").trim();
+    const validDate = normaliseDateString(rawDate);
+    if (validDate) parsed.due_date = validDate;
     if (fields?.amount !== undefined && fields?.amount !== null && fields?.amount !== "") {
       const amount = Number(fields.amount);
-      if (Number.isFinite(amount)) parsed.amount = round2(amount);
+      if (Number.isFinite(amount) && amount >= 0) parsed.amount = round2(amount);
     }
     parsed.raw.engine = "ai+local";
   } catch {
@@ -766,7 +805,7 @@ async function createInvoice(env, text, dueDays = 7) {
   const source = String(text ?? "").trim();
   if (!source) fail(400, "Нет текста для счёта");
   const parsed = await understand(env, source);
-  const dueDate = parsed.due_date || isoDateOnly(new Date(), dueDays);
+  const dueDate = normaliseDateString(parsed.due_date) || isoDateOnly(new Date(), dueDays);
   const clientName = parsed.client_name || "Клиент без названия";
   const client = await findClient(env, clientName);
   const clientId = client ? Number(client.id) : await addClient(env, clientName, parsed.inn || null, parsed.email || null);
@@ -803,6 +842,7 @@ async function markPaid(env, docId) {
   const doc = await getDocument(env, docId);
   if (!doc) fail(404, `Документ #${docId} не найден`);
   await updateDocument(env, docId, { status: "paid" });
+  await cancelReminders(env, "payment", docId);
   await logEvent(env, "payment.received", `#${docId} — ${money(doc.amount || 0)}`);
   return getDocument(env, docId);
 }
@@ -819,7 +859,13 @@ async function capture(env, text) {
     title: `Импорт: ${rows.length} строк`,
     client_name: "—",
     status: "done",
-    payload: { file, csv_text: content, preview: rows.slice(0, 5), rows: rows.length },
+    payload: {
+      file,
+      csv_text: content,
+      preview: rows.slice(0, 5),
+      rows: rows.length,
+      table: rows.slice(0, 500),
+    },
   });
   return { document_id: docId, rows: rows.length, file, csv_text: content, preview: rows.slice(0, 5) };
 }
@@ -850,7 +896,7 @@ async function weeklyReport(env) {
   const today = isoDateOnly();
   const weekAgo = isoDateOnly(new Date(), -7);
   const docs = (await getDocuments(env, { limit: 200 })).filter(
-    (doc) => String(doc.created_at || "").slice(0, 10) >= weekAgo
+    (doc) => doc.kind === "invoice" && String(doc.created_at || "").slice(0, 10) >= weekAgo
   );
   const paid = docs.filter((doc) => doc.status === "paid").reduce((sum, doc) => sum + Number(doc.amount || 0), 0);
   const waiting = docs.filter((doc) => doc.status !== "paid").reduce((sum, doc) => sum + Number(doc.amount || 0), 0);
@@ -913,9 +959,11 @@ async function agentDigest(env) {
   return lines.join("\n");
 }
 
-async function runAgentDigest(env) {
+async function runAgentDigest(env, force = false) {
+  const key = `agent_digest:${isoDateOnly()}`;
+  if (!force && (await getSetting(env, key, ""))) return 0;
   const chats = await knownChats(env);
-  if (!chats.length) return 0;
+  if (!chats.length) return 0; // ждём /status — тогда дайджест станет некому отправлять
   const text = await agentDigest(env);
   let sent = 0;
   for (const chat of chats) {
@@ -926,7 +974,10 @@ async function runAgentDigest(env) {
       // Один недоступный чат не должен ломать остальные.
     }
   }
-  if (sent) await logEvent(env, "agent.digest", `${sent} чат(ов)`);
+  if (sent) {
+    await setSetting(env, key, "1");
+    await logEvent(env, "agent.digest", `${sent} чат(ов)`);
+  }
   return sent;
 }
 
@@ -946,7 +997,10 @@ async function telegramApi(env, method, body, isFile = false) {
     body: isFile ? body : JSON.stringify(body),
   });
   if (!response.ok) throw new Error(`Telegram HTTP ${response.status}`);
-  return response.json();
+  const data = await response.json();
+  // Telegram возвращает 200 с ok:false, например при заблокированном боте.
+  if (!data?.ok) throw new Error(`Telegram: ${String(data?.description || "не удалось отправить").slice(0, 200)}`);
+  return data;
 }
 
 function sendTelegramMessage(env, chatId, text) {
@@ -1017,9 +1071,23 @@ async function handleTelegramText(env, chatId, text) {
   }
 }
 
+function telegramAllowed(env, chatId) {
+  const raw = String(env.TELEGRAM_ALLOWED_CHAT_IDS || "").trim();
+  if (!raw) return true;
+  return raw.split(/[;,]/).map((part) => part.trim()).filter(Boolean).includes(String(chatId));
+}
+
+async function optInChat(env, chatId) {
+  await setSetting(env, `tg_chat:${chatId}`, "1");
+  if (!(await getSetting(env, "notify_chat_id", ""))) {
+    await setSetting(env, "notify_chat_id", String(chatId));
+  }
+}
+
 async function handleTelegramCommand(env, chatId, command, argument) {
   switch (command) {
     case "start":
+      await optInChat(env, chatId);
       await sendTelegramMessage(env, chatId, `Привет. Я Такт. Забираю рутину у тебя — тихо и без лишних вопросов.\n\n${TG_HELP}`);
       return;
     case "help":
@@ -1035,6 +1103,7 @@ async function handleTelegramCommand(env, chatId, command, argument) {
       await askMode(env, chatId, "task", "Что нужно сделать? Можно с датой: «до 25 ноября».");
       return;
     case "status": {
+      await optInChat(env, chatId);
       const data = await overview(env);
       const c = data.counts;
       await sendTelegramMessage(
@@ -1065,8 +1134,15 @@ async function handleTelegramUpdate(env, update) {
   const message = update?.message || update?.edited_message;
   const chatId = message?.chat?.id;
   if (chatId === undefined || chatId === null) return;
+  if (!telegramAllowed(env, chatId)) {
+    try {
+      await sendTelegramMessage(env, chatId, "Этот бот закрыт для вашего чата.");
+    } catch {
+      // Не отвечаем посторонним, если Telegram недоступен.
+    }
+    return;
+  }
   try {
-    await setSetting(env, `tg_chat:${chatId}`, "1");
     const text = String(message.text || message.caption || "");
     const command = text.trim().match(/^\/(\w+)(?:@[\w_]+)?\s*([\s\S]*)$/);
     if (command) {
@@ -1093,6 +1169,7 @@ async function handleTelegramUpdate(env, update) {
       return;
     }
     if (message.voice) {
+      await deleteSetting(env, `tg_mode:${chatId}`);
       if (!aiEnabled(env)) {
         await sendTelegramMessage(env, chatId, "Расшифровка голоса недоступна: AI не настроен");
         return;
@@ -1140,7 +1217,10 @@ async function flushReminders(env) {
 function assetResponse(key, contentType) {
   const body = ASSETS && ASSETS[key];
   if (typeof body !== "string") return httpError(404, "Файл не найден");
-  return new Response(body, { status: 200, headers: { "Content-Type": contentType } });
+  return new Response(body, {
+    status: 200,
+    headers: { "Content-Type": contentType, "Content-Security-Policy": WEB_CSP, ...SECURITY_HEADERS },
+  });
 }
 
 function payloadFile(payload, key) {
@@ -1164,6 +1244,7 @@ function fileResponse(file) {
     headers: {
       "Content-Type": file.media,
       "Content-Disposition": `attachment; filename="${safeName}"`,
+      ...SECURITY_HEADERS,
     },
   });
 }
@@ -1239,10 +1320,53 @@ function zipStore(files) {
 
 function xmlEscape(value) {
   return String(value ?? "")
+    // XML 1.0 не допускает эти символы — Excel восстановит такой файл.
+    .replace(/[\u0000-\u0008\u000b\u000c\u000e-\u001f\ufffe\uffff]/g, "")
     .replace(/&/g, "&amp;")
     .replace(/</g, "&lt;")
     .replace(/>/g, "&gt;")
     .replace(/"/g, "&quot;");
+}
+
+function parseCsvText(raw) {
+  const text = String(raw ?? "").replace(/^\uFEFF/, "");
+  const rows = [];
+  let row = [];
+  let cell = "";
+  let quoted = false;
+  for (let i = 0; i < text.length; i += 1) {
+    const char = text[i];
+    if (quoted) {
+      if (char === '"' && text[i + 1] === '"') {
+        cell += '"';
+        i += 1;
+      } else if (char === '"') {
+        quoted = false;
+      } else {
+        cell += char;
+      }
+      continue;
+    }
+    if (char === '"') {
+      quoted = true;
+    } else if (char === ";") {
+      row.push(cell.trim());
+      cell = "";
+    } else if (char === "\r" || char === "\n") {
+      if (char === "\r" && text[i + 1] === "\n") i += 1;
+      row.push(cell.trim());
+      if (row.some(Boolean)) rows.push(row);
+      row = [];
+      cell = "";
+    } else {
+      cell += char;
+    }
+  }
+  if (cell || row.length) {
+    row.push(cell.trim());
+    if (row.some(Boolean)) rows.push(row);
+  }
+  return rows;
 }
 
 function columnName(index) {
@@ -1268,11 +1392,19 @@ function xlsxRows(doc) {
     ["Сумма, ₽", Number(doc.amount || 0), ""],
     ["", "", ""],
   ];
-  const csv = String(doc.payload?.csv_text || "");
-  if (csv) {
+  const table = Array.isArray(doc.payload?.table) ? doc.payload.table : [];
+  const csvRows = table.length ? [] : parseCsvText(doc.payload?.csv_text);
+  if (table.length || csvRows.length) {
     rows.push(["Строки таблицы", "", ""]);
-    for (const line of csv.split(/\r?\n/).filter(Boolean)) {
-      rows.push(line.split(/[;|]/).map((cell) => cell.trim()));
+    if (table.length) {
+      const header = Object.keys(table[0]);
+      rows.push(header);
+      for (const item of table.slice(0, 500)) rows.push(header.map((name) => item?.[name] ?? ""));
+    } else {
+      const width = Math.max(...csvRows.map((row) => row.length), 1);
+      for (const row of csvRows) {
+        rows.push(Array.from({ length: width }, (_, index) => row[index] ?? ""));
+      }
     }
   }
   return rows;
@@ -1336,6 +1468,7 @@ function xlsxResponse(doc) {
     headers: {
       "Content-Type": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
       "Content-Disposition": `attachment; filename="${name}"`,
+      ...SECURITY_HEADERS,
     },
   });
 }
@@ -1362,7 +1495,7 @@ function parseLimit(value) {
   if (value === null) return 50;
   const number = Number(value);
   if (!Number.isInteger(number)) fail(422, "limit должен быть целым числом");
-  return number;
+  return Math.min(Math.max(number, 1), 200);
 }
 
 function validateChatId(body) {
@@ -1372,8 +1505,39 @@ function validateChatId(body) {
   return text;
 }
 
+async function secretsEqual(left, right) {
+  const encoder = new TextEncoder();
+  const [first, second] = await Promise.all([
+    crypto.subtle.digest("SHA-256", encoder.encode(String(left))),
+    crypto.subtle.digest("SHA-256", encoder.encode(String(right))),
+  ]);
+  const a = new Uint8Array(first);
+  const b = new Uint8Array(second);
+  let difference = 0;
+  for (let index = 0; index < a.length; index += 1) difference |= a[index] ^ b[index];
+  return difference === 0;
+}
+
+async function requireAdmin(request, env) {
+  // Если отдельный токен не задан, используем уже существующий секрет вебхука.
+  const configured = String(env.TAKT_ADMIN_TOKEN || env.TELEGRAM_WEBHOOK_SECRET || "");
+  if (!configured) return httpError(503, "Админ-токен не настроен");
+  const header = String(request.headers.get("Authorization") || "");
+  const supplied = header.startsWith("Bearer ")
+    ? header.slice(7).trim()
+    : String(request.headers.get("X-Admin-Token") || "");
+  if (!(await secretsEqual(supplied, configured))) return httpError(401, "Нужен административный токен");
+  return null;
+}
+
 async function routeApi(request, env, url, path, method) {
   if (path === "/api/health" && method === "GET") return json({ status: "ok", product: "takt" });
+
+  // Внутренние и админские маршруты не должны быть открытыми на workers.dev.
+  if (/^\/api\/(?:agent|settings|reminders)/.test(path)) {
+    const denied = await requireAdmin(request, env);
+    if (denied) return denied;
+  }
 
   if (path === "/api/overview" && method === "GET") return json(await overview(env));
 
@@ -1447,11 +1611,12 @@ async function routeApi(request, env, url, path, method) {
   }
 
   if (path === "/api/agent/digest" && method === "GET") {
-    return json({ text: await agentDigest(env), chats: await knownChats(env) });
+    return json({ text: await agentDigest(env) });
   }
 
   if (path === "/api/agent/digest/send" && method === "POST") {
-    return json({ sent: await runAgentDigest(env) });
+    const force = url.searchParams.get("force") === "1";
+    return json({ sent: await runAgentDigest(env, force) });
   }
 
   if (path === "/api/reminders/due" && method === "GET") {
@@ -1494,8 +1659,12 @@ export default {
       if (telegram) {
         if (method !== "POST") return httpError(404, "Не найдено");
         const configured = String(env.TELEGRAM_WEBHOOK_SECRET || "");
+        if (!configured) return httpError(404, "Не найдено");
         const supplied = telegram[1] || "";
-        if (configured ? supplied !== configured : supplied !== "") return httpError(404, "Не найдено");
+        const header = String(request.headers.get("X-Telegram-Bot-Api-Secret-Token") || "");
+        if (!(await secretsEqual(supplied, configured))) return httpError(404, "Не найдено");
+        // Telegram добавляет заголовок, если secret_token передан в setWebhook.
+        if (header && !(await secretsEqual(header, configured))) return httpError(404, "Не найдено");
         let update;
         try {
           update = await request.json();

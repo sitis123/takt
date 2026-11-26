@@ -17,6 +17,8 @@
        SQLite ~/.takt/takt.db + ~/.takt/out/*
 ```
 
+Облачный контур (рабочий): `web/` встраивается в `worker/dist/takt-worker.js`, Telegram webhook и Cloudflare Cron вызывают `worker/index.js`, данные хранятся в D1 `takt-db`. Это порт той же логики на JS: `scheduled()` вместо `scheduler.py`, файлы документов — в `payload`, статика — в бандле.
+
 ## Слои
 
 | Слой | Ответственность | Что не делает |
@@ -28,6 +30,7 @@
 | `services.py` | счета, акты, импорт, задачи, отчёты, напоминания | не знает про HTTP и Telegram |
 | `render.py`, `money.py` | печатные формы и суммы словами | не пишут в базу |
 | `api.py`, `bot.py`, `cli.py` | адаптеры ввода/вывода | не дублируют логику |
+| `worker/index.js` | облачный порт сервисов, D1, Telegram, Cron, встроенный веб | не использует VPS и домен |
 
 ## Данные
 

@@ -43,14 +43,18 @@ def parse_date(text: str, today: datetime | None = None) -> str:
     match = re.search(r"через\s+(\d+)\s*(день|дня|дней)", lowered)
     if match:
         return (base + timedelta(days=int(match.group(1)))).date().isoformat()
-    if "завтра" in lowered:
-        return (base + timedelta(days=1)).date().isoformat()
+    # «послезавтра» содержит «завтра» — проверяем его раньше.
     if "послезавтра" in lowered:
         return (base + timedelta(days=2)).date().isoformat()
+    if "завтра" in lowered:
+        return (base + timedelta(days=1)).date().isoformat()
     for month_name, month_number in _MONTHS.items():
         match = re.search(rf"(\d{{1,2}})\s+{month_name}", lowered)
         if match:
-            return datetime(base.year, month_number, int(match.group(1))).date().isoformat()
+            try:
+                return datetime(base.year, month_number, int(match.group(1))).date().isoformat()
+            except ValueError:
+                continue
     for pattern in (r"\d{2}\.\d{2}\.\d{4}", r"\d{4}-\d{2}-\d{2}", r"\d{2}/\d{2}/\d{4}"):
         match = re.search(pattern, text)
         if match:
@@ -76,12 +80,18 @@ def _amount(text: str) -> float:
                 return float(normalise(candidate))
             except Exception:
                 continue
-    match = re.search(r"(?<!\d)(\d{3,}(?:[.,]\d{1,2})?)(?!\d)", text)
-    if match:
+    for match in re.finditer(r"(?<!\d)(\d{3,}(?:[.,]\d{1,2})?)(?!\d)", text):
+        candidate = match.group(1)
+        # ИНН (10–12 цифр) — не сумма счёта.
+        if len(re.sub(r"\D", "", candidate)) >= 10:
+            continue
+        context = text[max(0, match.start() - 12):match.start()].lower()
+        if "инн" in context:
+            continue
         try:
-            return float(normalise(match.group(1)))
+            return float(normalise(candidate))
         except Exception:
-            return 0.0
+            continue
     return 0.0
 
 
@@ -125,7 +135,11 @@ def parse_text(text: str, today: datetime | None = None) -> Parsed:
 def parse_table(text: str) -> list[dict[str, str]]:
     """Превращает скрин/текст таблицы в строки: разделитель — таб, ';' или '|'."""
     rows: list[dict[str, str]] = []
-    lines = [line.strip() for line in _clean(text).splitlines() if line.strip()]
+    lines = [
+        line.strip()
+        for line in _clean(text).splitlines()
+        if line.strip() and not re.fullmatch(r"[\s|:-]+", line.strip())
+    ]
     if not lines:
         return rows
     separator = "|" if "|" in lines[0] else ("\t" if "\t" in lines[0] else ";")

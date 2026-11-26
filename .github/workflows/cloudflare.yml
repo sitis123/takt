@@ -68,11 +68,13 @@ jobs:
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_WEBHOOK_SECRET: ${{ secrets.TELEGRAM_WEBHOOK_SECRET }}
+          TAKT_ADMIN_TOKEN: ${{ secrets.TAKT_ADMIN_TOKEN }}
+          TELEGRAM_ALLOWED_CHAT_IDS: ${{ vars.TELEGRAM_ALLOWED_CHAT_IDS }}
           AI_BASE_URL: ${{ secrets.AI_BASE_URL }}
           AI_API_KEY: ${{ secrets.AI_API_KEY }}
         run: |
           set -euo pipefail
-          for name in TELEGRAM_BOT_TOKEN TELEGRAM_WEBHOOK_SECRET AI_BASE_URL AI_API_KEY; do
+          for name in TELEGRAM_BOT_TOKEN TELEGRAM_WEBHOOK_SECRET TAKT_ADMIN_TOKEN TELEGRAM_ALLOWED_CHAT_IDS AI_BASE_URL AI_API_KEY; do
             value="${!name:-}"
             if [ -n "$value" ]; then
               printf '%s' "$value" | npx --yes wrangler@latest secret put "$name"
@@ -83,7 +85,9 @@ jobs:
               "https://api.cloudflare.com/client/v4/accounts/$CLOUDFLARE_ACCOUNT_ID/workers/subdomain" \
               | jq -r '.result.subdomain')
             url="https://takt.$sub.workers.dev/telegram/$TELEGRAM_WEBHOOK_SECRET"
-            curl -fsS "https://api.telegram.org/bot$TELEGRAM_BOT_TOKEN/setWebhook?url=$url" >/dev/null
+            # secret_token передаётся в теле запроса: секрет не попадает в URL/логи.
+            payload=$(WEBHOOK_URL="$url" WEBHOOK_SECRET="$TELEGRAM_WEBHOOK_SECRET" python3 -c 'import json,os;print(json.dumps({"url":os.environ["WEBHOOK_URL"],"secret_token":os.environ["WEBHOOK_SECRET"]}))')
+            curl -fsS -H 'Content-Type: application/json' -d "$payload" "https://api.telegram.org/bot$TELEGRAM_BOT_TOKEN/setWebhook" >/dev/null
             # Проверяем, что Telegram действительно видит активный webhook (URL не печатаем).
             curl -fsS "https://api.telegram.org/bot$TELEGRAM_BOT_TOKEN/getWebhookInfo" \
               | jq -e '.ok and (.result.url | startswith("https://takt."))' >/dev/null

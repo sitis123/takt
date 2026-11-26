@@ -14,6 +14,14 @@ from .parser import Parsed, parse_table, parse_text
 from .render import act_html, invoice_html
 
 
+def safe_cell(value: Any) -> Any:
+    """Предотвращает выполнение ячейки как формулы при открытии CSV в Excel."""
+    text = str(value)
+    if isinstance(value, str) and text.startswith(("=", "+", "-", "@", "\t", "\r")):
+        return "'" + text
+    return value
+
+
 class Takt:
     """Прикладной слой: один и тот же используется вебом, ботом и CLI."""
 
@@ -49,8 +57,14 @@ class Takt:
         text = text.strip()
         if not text:
             raise ValueError("Нет текста для счёта")
+        if not 0 <= due_days <= 365:
+            raise ValueError("Срок оплаты должен быть от 0 до 365 дней")
         parsed = self._understand(text)
-        due_date = parsed.due_date or (date.today() + timedelta(days=due_days)).isoformat()
+        try:
+            parsed_due = date.fromisoformat(parsed.due_date[:10]) if parsed.due_date else None
+        except ValueError:
+            parsed_due = None
+        due_date = parsed_due.isoformat() if parsed_due else (date.today() + timedelta(days=due_days)).isoformat()
         client_name = parsed.client_name or "Клиент без названия"
         client = self.store.find_client(client_name)
         client_id = client["id"] if client else self.store.add_client(
@@ -92,6 +106,7 @@ class Takt:
         if not doc:
             raise ValueError(f"Документ #{doc_id} не найден")
         self.store.update_document(doc_id, status="paid")
+        self.store.cancel_reminders("payment", doc_id)
         self.store.log_event("payment.received", f"#{doc_id} — {money(doc.get('amount', 0))}")
         return self.store.document(doc_id) or {}
 
@@ -111,16 +126,16 @@ class Takt:
         header = list(rows[0].keys())
         buffer = io.StringIO()
         writer = csv.writer(buffer, delimiter=";", lineterminator="\r\n")
-        writer.writerow(header)
+        writer.writerow([safe_cell(value) for value in header])
         for row in rows:
-            writer.writerow([row.get(column, "") for column in header])
-        path = self.config.out_dir / f"capture-{datetime.now():%Y%m%d-%H%M%S}.csv"
+            writer.writerow([safe_cell(row.get(column, "")) for column in header])
+        path = self.config.out_dir / f"capture-{datetime.now():%Y%m%d-%H%M%S-%f}.csv"
         path.write_text("\ufeff" + buffer.getvalue(), encoding="utf-8")
         doc_id = self.store.add_document(
             kind="capture",
             title=f"Импорт: {len(rows)} строк",
             client_name="—",
-            payload={"file": str(path), "preview": rows[:5], "rows": len(rows)},
+            payload={"file": str(path), "preview": rows[:5], "rows": len(rows), "table": rows[:500]},
             status="done",
         )
         return {"document_id": doc_id, "rows": len(rows), "file": str(path), "preview": rows[:5]}
@@ -147,11 +162,13 @@ class Takt:
     def flush_reminders(self, sender: Callable[[str], None]) -> int:
         sent = 0
         for reminder in self.store.due_reminders():
+            if not self.store.claim_reminder(reminder["id"]):
+                continue
             try:
                 sender(reminder["message"])
             except Exception:
+                self.store.release_reminder(reminder["id"])
                 continue
-            self.store.mark_reminder_sent(reminder["id"])
             self.store.log_event("reminder.sent", reminder["message"])
             sent += 1
         return sent
@@ -170,7 +187,8 @@ class Takt:
         docs = [
             doc
             for doc in self.store.documents(limit=200)
-            if str(doc.get("created_at", ""))[:10] >= week_ago
+            if doc.get("kind") == "invoice"
+            and str(doc.get("created_at", ""))[:10] >= week_ago
         ]
         paid = sum(float(doc.get("amount") or 0) for doc in docs if doc.get("status") == "paid")
         waiting = sum(float(doc.get("amount") or 0) for doc in docs if doc.get("status") != "paid")
@@ -195,6 +213,45 @@ class Takt:
                 suffix = f" (до {task['due_date']})" if task.get("due_date") else ""
                 lines.append(f"• {task['title']}{suffix}")
         return "\n".join(lines)
+
+    # --- дежурный агент --------------------------------------------------
+    def register_chat(self, chat_id: int | str) -> None:
+        self.store.set_setting(f"tg_chat:{chat_id}", "1")
+        if not self.store.setting("notify_chat_id"):
+            self.store.set_setting("notify_chat_id", str(chat_id))
+
+    def known_chats(self) -> list[str]:
+        return [key.split(":", 1)[1] for key in self.store.settings() if key.startswith("tg_chat:")]
+
+    def agent_digest(self) -> dict[str, Any]:
+        counts = self.store.counts()
+        urgent = counts.get("overdue", 0)
+        lines = [
+            f"Такт · дежурный обзор · {date.today():%d.%m.%Y}",
+            "",
+            f"Счетов: {counts['documents']} · ждут оплаты: {counts['unpaid']} · просрочено: {urgent}",
+            f"Открытых задач: {counts['open_tasks']} · напоминаний в очереди: {counts['pending_reminders']}",
+            "",
+            "Что сделать:",
+            "• Рутина под контролем — ничего не горит." if not urgent else f"• Просрочено счетов: {urgent} — напомнить.",
+        ]
+        return {"text": "\n".join(lines), "chats": self.known_chats()}
+
+    def send_digest(self, sender: Callable[[str, str], None], force: bool = False) -> int:
+        key = f"agent_digest:{date.today().isoformat()}"
+        if not force and self.store.setting(key):
+            return 0
+        digest = self.agent_digest()
+        sent = 0
+        for chat in digest["chats"]:
+            try:
+                sender(chat, digest["text"])
+            except Exception:
+                continue
+            sent += 1
+        if sent or not digest["chats"]:
+            self.store.set_setting(key, "1")
+        return sent
 
 
 def clean_task_title(text: str) -> str:

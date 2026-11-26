@@ -2,13 +2,14 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from fastapi import FastAPI, HTTPException
-from fastapi.responses import FileResponse, RedirectResponse
+from fastapi import FastAPI, HTTPException, Query
+from fastapi.responses import FileResponse, RedirectResponse, Response
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
 from .config import get_config
 from .services import Takt
+from .xlsx import xlsx_bytes
 
 WEB_DIR = Path(__file__).resolve().parent.parent.parent / "web"
 app = FastAPI(title="Такт", description="Администратор рутины", version="0.1.0")
@@ -34,6 +35,10 @@ class TaskIn(TextIn):
     source: str = "web"
 
 
+class SettingsIn(BaseModel):
+    notify_chat_id: int | None = None
+
+
 @app.get("/api/health")
 def health() -> dict[str, str]:
     return {"status": "ok", "product": "takt"}
@@ -45,7 +50,11 @@ def overview() -> dict:
 
 
 @app.get("/api/documents")
-def documents(limit: int = 50, status: str | None = None, kind: str | None = None) -> list[dict]:
+def documents(
+    limit: int = Query(default=50, ge=1, le=200),
+    status: str | None = None,
+    kind: str | None = None,
+) -> list[dict]:
     return service().store.documents(limit=limit, status=status, kind=kind)
 
 
@@ -89,6 +98,22 @@ def download_document(doc_id: int, key: str = "invoice_file") -> FileResponse:
     return FileResponse(path, media_type=media, filename=Path(path).name)
 
 
+@app.get("/api/documents/{doc_id}/export.xlsx")
+def export_xlsx(doc_id: int) -> Response:
+    doc = service().store.document(doc_id)
+    if not doc:
+        raise HTTPException(status_code=404, detail="Документ не найден")
+    rows = doc.get("payload", {}).get("table") or []
+    return Response(
+        content=xlsx_bytes(rows),
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={
+            "Content-Disposition": f'attachment; filename="takt-{doc_id:04d}.xlsx"',
+            "X-Content-Type-Options": "nosniff",
+        },
+    )
+
+
 @app.post("/api/capture", status_code=201)
 def capture(body: TextIn) -> dict:
     try:
@@ -126,6 +151,33 @@ def flush_reminders() -> dict[str, int]:
     from . import bot as bot_module
 
     return {"sent": service().flush_reminders(bot_module.notify)}
+
+
+@app.get("/api/settings")
+def get_settings() -> dict[str, str]:
+    return service().store.settings()
+
+
+@app.post("/api/settings")
+def update_settings(body: SettingsIn) -> dict[str, str]:
+    if body.notify_chat_id is not None:
+        service().store.set_setting("notify_chat_id", str(body.notify_chat_id))
+    return service().store.settings()
+
+
+@app.get("/api/agent/digest")
+def agent_digest() -> dict[str, str]:
+    return {"text": service().agent_digest()["text"]}
+
+
+@app.post("/api/agent/digest/send")
+def send_digest(force: bool = False) -> dict[str, int]:
+    from . import bot as bot_module
+
+    def sender(chat: str, text: str) -> None:
+        bot_module.notify(text, chat)
+
+    return {"sent": service().send_digest(sender, force=force)}
 
 
 if WEB_DIR.exists():
