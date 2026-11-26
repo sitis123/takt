@@ -113,4 +113,4 @@ curl -X POST "https://api.telegram.org/bot<TELEGRAM_BOT_TOKEN>/setWebhook" \
 
 Админ-роуты (`agent`, `settings`, `reminders`) требуют `Authorization: Bearer <TAKT_ADMIN_TOKEN>`; при отсутствии отдельного токена используется `TELEGRAM_WEBHOOK_SECRET`.
 
-Статика: `/` → 302 `/web/`, затем `/web/`, `/web/styles.css`, `/web/app.js` — из встроенных ассетов. Ошибки — JSON `{"detail": "..."}` со статусами 400/404/422.
+Статика: `/` (и `/landing`) → посадочная страница, приложение — `/web/`; ассеты `/web/styles.css`, `/web/app.js`, `/web/landing.css` встроены в бандл. Ошибки — JSON `{"detail": "..."}` со статусами 400/404/422.

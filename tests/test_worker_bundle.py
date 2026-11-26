@@ -33,6 +33,9 @@ def test_worker_bundle_contains_routes_schema_and_assets() -> None:
         "tg_chat:",
         "data:image/svg+xml",
         "win-controls",
+        "landing.html",
+        "landing.css",
+        "/web/landing.css",
     ):
         assert needle in bundle, f"В бандле нет: {needle}"
 
@@ -42,3 +45,5 @@ def test_worker_bundle_contains_routes_schema_and_assets() -> None:
     assert '"index.html": "<!doctype html>' in bundle or '"index.html": "<html' in bundle
     assert '"styles.css":' in bundle
     assert '"app.js":' in bundle
+    assert '"landing.html":' in bundle
+    assert '"landing.css":' in bundle

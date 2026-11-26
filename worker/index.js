@@ -1735,7 +1735,11 @@ export default {
       const path = rawPath.length > 1 ? rawPath.replace(/\/+$/, "") : rawPath;
       const method = request.method.toUpperCase();
 
-      if (path === "/") return redirect("/web/");
+      // Корень — посадочная страница; приложение остаётся на /web/.
+      if (path === "/" || path === "/landing" || path === "/web/landing.html") {
+        return assetResponse("landing.html", "text/html; charset=utf-8");
+      }
+      if (path === "/web/landing.css") return assetResponse("landing.css", "text/css; charset=utf-8");
       if (path === "/web" || path === "/web/index.html") return assetResponse("index.html", "text/html; charset=utf-8");
       if (path === "/web/styles.css") return assetResponse("styles.css", "text/css; charset=utf-8");
       if (path === "/web/app.js") return assetResponse("app.js", "application/javascript; charset=utf-8");

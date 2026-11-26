@@ -18,7 +18,7 @@ python -m takt init
 python -m takt serve
 ```
 
-Откройте <http://127.0.0.1:8765/>.
+Откройте <http://127.0.0.1:8765/> — посадочная страница; само приложение на <http://127.0.0.1:8765/web/>.
 
 Рабочий облачный контур: <https://takt.gwsuite.workers.dev/>. Обновления в `main` автоматически выкатываются workflow `Deploy to Cloudflare` (при `CLOUDFLARE_DEPLOY=true`); старый SSH-workflow `Deploy` не используется. Инструкция — в [docs/DEPLOY.md](docs/DEPLOY.md).
 

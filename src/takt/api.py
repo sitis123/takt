@@ -185,5 +185,8 @@ if WEB_DIR.exists():
 
 
 @app.get("/")
-def index() -> RedirectResponse:
+def index() -> Response:
+    landing = WEB_DIR / "landing.html"
+    if landing.exists():
+        return FileResponse(landing, media_type="text/html; charset=utf-8")
     return RedirectResponse(url="/web/", status_code=302)
