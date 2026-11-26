@@ -1661,10 +1661,11 @@ async function routeApi(request, env, url, path, method) {
       });
       if (!response.ok) return json({ ok: false, reason: `AI HTTP ${response.status}` }, 502);
       const data = await response.json();
-      const models = Array.isArray(data?.data)
-        ? data.data.map((item) => String(item?.id || "")).filter((id) => id.startsWith("gemini"))
+      const all = Array.isArray(data?.data)
+        ? data.data.map((item) => String(item?.id || item?.name || "")).filter(Boolean)
         : [];
-      return json({ ok: true, models });
+      const models = all.filter((id) => id.includes("gemini"));
+      return json({ ok: true, models, all: all.slice(0, 40), keys: Object.keys(data || {}) });
     } catch {
       return json({ ok: false, reason: "AI недоступен" }, 502);
     }
