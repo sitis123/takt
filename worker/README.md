@@ -109,7 +109,7 @@ curl -X POST "https://api.telegram.org/bot<TELEGRAM_BOT_TOKEN>/setWebhook" \
 
 ## 6. Маршруты
 
-`GET /api/health`, `GET /api/overview`, `GET /api/documents?limit&status&kind`, `POST /api/invoices`, `POST /api/documents/:id/paid`, `GET /api/documents/:id/file?kind=invoice|act`, `GET /api/documents/:id/download?key=...`, `GET /api/documents/:id/export.xlsx`, `POST /api/capture`, `POST /api/tasks`, `POST /api/tasks/:id/done`, `GET /api/reports/weekly`, `GET /api/reminders/due`, `POST /api/reminders/flush`, `GET|POST /api/settings`, `GET /api/agent/digest`, `POST /api/agent/digest/send?force=1`.
+`GET /api/health`, `GET /api/overview`, `GET /api/documents?limit&status&kind`, `POST /api/invoices`, `POST /api/documents/:id/paid`, `GET /api/documents/:id/file?kind=invoice|act`, `GET /api/documents/:id/download?key=...`, `GET /api/documents/:id/export.xlsx`, `POST /api/capture`, `POST /api/tasks`, `POST /api/tasks/:id/done`, `GET /api/reports/weekly`, `GET /api/reminders/due`, `POST /api/reminders/flush`, `GET|POST /api/settings`, `GET /api/agent/digest`, `POST /api/agent/digest/send?force=1`, `GET /api/ai/check`, `GET /api/ai/models`, `POST /api/ai/probe`.
 
 Админ-роуты (`agent`, `settings`, `reminders`) требуют `Authorization: Bearer <TAKT_ADMIN_TOKEN>`; при отсутствии отдельного токена используется `TELEGRAM_WEBHOOK_SECRET`.
 

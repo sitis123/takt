@@ -35,7 +35,9 @@ Secrets:
 | `AI_BASE_URL` | OpenAI-совместимый endpoint (Gemini: `https://generativelanguage.googleapis.com/v1beta/openai`) |
 | `AI_API_KEY` | ключ провайдера; без него работает локальный парсер |
 
-Variables: `CLOUDFLARE_DEPLOY=true`, необязательно `TELEGRAM_ALLOWED_CHAT_IDS=123,456`, `AI_MODEL`, `AI_VISION_MODEL`. Для Gemini модели оставьте пустыми — подставится `gemini-3.5-flash-lite`.
+Variables: `CLOUDFLARE_DEPLOY=true`, необязательно `TELEGRAM_ALLOWED_CHAT_IDS=123,456`, `AI_MODEL`, `AI_VISION_MODEL`. Для Gemini модели оставьте пустыми — подставится `gemini-3.5-flash-lite` (проверено на ключе с бесплатным лимитом).
+
+Админская диагностика AI: `GET /api/ai/check?model=...` (реальный тестовый запрос), `GET /api/ai/models` (список моделей провайдера), `POST /api/ai/probe` с `{"kind":"vision|audio","data":"<base64>","mime":"...","filename":"..."}` — проверка тех же функций, что использует бот для фото и голоса.
 
 `wrangler secret put` сразу создаёт новую версию Worker — отдельный редеплой после смены ключа не нужен.
 
