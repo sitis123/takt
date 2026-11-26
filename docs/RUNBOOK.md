@@ -1,5 +1,26 @@
 # Runbook: что делать, если что-то пошло не так
 
+## Рабочий контур (GitHub + Cloudflare, без VPS)
+
+Основной сайт: <https://takt.gwsuite.workers.dev/>. Проверка за 10 секунд:
+
+```bash
+curl -fsS https://takt.gwsuite.workers.dev/api/health
+curl -fsS -o /dev/null -w "%{http_code}\n" https://takt.gwsuite.workers.dev/web/
+```
+
+Ожидаемо: `{"status":"ok","product":"takt"}` и `200`. В Windows вместо `/dev/null` используйте `NUL`.
+
+Если что-то не так:
+
+1. Откройте Actions → `Deploy to Cloudflare` в репозитории `sitis123/takt`; последний run должен быть зелёным.
+2. Красный run — читайте логи шага `wrangler deploy`: чаще всего виноваты истёкший `CLOUDFLARE_API_TOKEN`, неверный `CLOUDFLARE_ACCOUNT_ID` или битый `wrangler.toml` (D1 `takt-db`, ID `65d69c7d-a34e-43a3-b140-de388b88d6eb`).
+3. Health зелёный, а веб пустой — проверьте, что в бандле свежий `worker/dist/takt-worker.js`: `python scripts/build_worker.py && python -m pytest -q`.
+4. Бот молчит — проверьте `TELEGRAM_BOT_TOKEN`, `TELEGRAM_WEBHOOK_SECRET` и `getWebhookInfo` в логах workflow.
+5. Фото/голос не распознаются — проверьте Secrets `AI_BASE_URL` и `AI_API_KEY`; для Gemini база — `https://generativelanguage.googleapis.com/v1beta/openai`.
+
+Ниже — резервная инструкция для VPS, если контур когда-то снова понадобится.
+
 ## Быстрая диагностика
 
 ```bash
