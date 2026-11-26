@@ -1613,11 +1613,25 @@ async function routeApi(request, env, url, path, method) {
   if (path === "/api/ai/check" && method === "GET") {
     if (!aiEnabled(env)) return json({ ok: false, reason: "AI не настроен" }, 503);
     try {
-      const response = await fetch(aiUrl(env, "models"), {
-        headers: { Authorization: `Bearer ${env.AI_API_KEY}` },
+      const response = await fetch(aiUrl(env, "chat/completions"), {
+        method: "POST",
+        headers: { Authorization: `Bearer ${env.AI_API_KEY}`, "Content-Type": "application/json" },
+        body: JSON.stringify({
+          model: aiModel(env),
+          messages: [{ role: "user", content: "Ответь одним словом: готово" }],
+          temperature: 0,
+        }),
       });
       if (!response.ok) return json({ ok: false, reason: `AI HTTP ${response.status}` }, 502);
-      return json({ ok: true, provider: isGemini(env) ? "gemini" : "openai-compatible", model: aiModel(env) });
+      const data = await response.json();
+      const answer = String(data?.choices?.[0]?.message?.content || "").trim();
+      if (!answer) return json({ ok: false, reason: "AI вернул пустой ответ" }, 502);
+      return json({
+        ok: true,
+        provider: isGemini(env) ? "gemini" : "openai-compatible",
+        model: aiModel(env),
+        answer: answer.slice(0, 80),
+      });
     } catch {
       return json({ ok: false, reason: "AI недоступен" }, 502);
     }
