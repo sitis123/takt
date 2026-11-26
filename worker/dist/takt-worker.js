@@ -730,12 +730,20 @@ async function aiVisionToText(env, bytes, mime = "image/jpeg") {
       temperature: 0,
     }),
   });
-  if (!response.ok) throw new Error(`AI HTTP ${response.status}`);
+  if (!response.ok) {
+    const detail = (await response.text()).replace(/\s+/g, " ").slice(0, 200);
+    throw new Error(`AI HTTP ${response.status}: ${detail}`);
+  }
   const data = await response.json();
   return String(data?.choices?.[0]?.message?.content ?? "");
 }
 
-async function aiTranscribeGemini(env, bytes) {
+function audioMime(filename) {
+  const ext = String(filename || "").split(".").pop().toLowerCase();
+  return ({ ogg: "audio/ogg", oga: "audio/ogg", mp3: "audio/mpeg", wav: "audio/wav", m4a: "audio/mp4" })[ext] || "audio/ogg";
+}
+
+async function aiTranscribeGemini(env, bytes, mime = "audio/ogg") {
   const model = aiModel(env);
   const response = await fetch(
     `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`,
@@ -746,14 +754,17 @@ async function aiTranscribeGemini(env, bytes) {
         contents: [{
           parts: [
             { text: "Расшифруй эту аудиозапись дословно, по-русски. Верни только текст расшифровки, без пояснений." },
-            { inline_data: { mime_type: "audio/ogg", data: bytesToBase64(bytes) } },
+            { inline_data: { mime_type: mime, data: bytesToBase64(bytes) } },
           ],
         }],
         generationConfig: { temperature: 0 },
       }),
     }
   );
-  if (!response.ok) throw new Error(`Gemini HTTP ${response.status}`);
+  if (!response.ok) {
+    const detail = (await response.text()).replace(/\s+/g, " ").slice(0, 200);
+    throw new Error(`Gemini HTTP ${response.status}: ${detail}`);
+  }
   const data = await response.json();
   const parts = data?.candidates?.[0]?.content?.parts || [];
   const text = parts.map((part) => String(part?.text || "")).join("").trim();
@@ -762,9 +773,10 @@ async function aiTranscribeGemini(env, bytes) {
 }
 
 async function aiTranscribe(env, bytes, filename = "voice.ogg") {
-  if (isGemini(env)) return aiTranscribeGemini(env, bytes);
+  const mime = audioMime(filename);
+  if (isGemini(env)) return aiTranscribeGemini(env, bytes, mime);
   const form = new FormData();
-  form.append("file", new Blob([bytes], { type: "audio/ogg" }), filename);
+  form.append("file", new Blob([bytes], { type: mime }), filename);
   form.append("model", env.AI_MODEL || "gpt-4o-mini");
   const response = await fetch(aiUrl(env, "audio/transcriptions"), {
     method: "POST",
@@ -1623,7 +1635,10 @@ async function routeApi(request, env, url, path, method) {
           temperature: 0,
         }),
       });
-      if (!response.ok) return json({ ok: false, reason: `AI HTTP ${response.status}` }, 502);
+      if (!response.ok) {
+        const detail = (await response.text()).replace(/\s+/g, " ").slice(0, 200);
+        return json({ ok: false, reason: `AI HTTP ${response.status}: ${detail}` }, 502);
+      }
       const data = await response.json();
       const answer = String(data?.choices?.[0]?.message?.content || "").trim();
       if (!answer) return json({ ok: false, reason: "AI вернул пустой ответ" }, 502);
