@@ -1612,12 +1612,13 @@ async function routeApi(request, env, url, path, method) {
 
   if (path === "/api/ai/check" && method === "GET") {
     if (!aiEnabled(env)) return json({ ok: false, reason: "AI не настроен" }, 503);
+    const probeModel = String(url.searchParams.get("model") || "").trim().slice(0, 80) || aiModel(env);
     try {
       const response = await fetch(aiUrl(env, "chat/completions"), {
         method: "POST",
         headers: { Authorization: `Bearer ${env.AI_API_KEY}`, "Content-Type": "application/json" },
         body: JSON.stringify({
-          model: aiModel(env),
+          model: probeModel,
           messages: [{ role: "user", content: "Ответь одним словом: готово" }],
           temperature: 0,
         }),
@@ -1629,11 +1630,36 @@ async function routeApi(request, env, url, path, method) {
       return json({
         ok: true,
         provider: isGemini(env) ? "gemini" : "openai-compatible",
-        model: aiModel(env),
+        model: probeModel,
         answer: answer.slice(0, 80),
       });
     } catch {
       return json({ ok: false, reason: "AI недоступен" }, 502);
+    }
+  }
+
+  // Админская проверка фото/голоса через те же функции, что использует бот.
+  if (path === "/api/ai/probe" && method === "POST") {
+    if (!aiEnabled(env)) return json({ ok: false, reason: "AI не настроен" }, 503);
+    const body = await readBody(request);
+    const kind = String(body?.kind || "").trim();
+    const encoded = String(body?.data || "");
+    if (!["vision", "audio"].includes(kind)) fail(422, "kind должен быть vision или audio");
+    if (!encoded || encoded.length > 8_000_000) fail(422, "Некорректный размер данных");
+    let bytes;
+    try {
+      const binary = atob(encoded);
+      bytes = Uint8Array.from(binary, (char) => char.charCodeAt(0));
+    } catch {
+      fail(422, "Некорректный base64");
+    }
+    try {
+      const text = kind === "vision"
+        ? await aiVisionToText(env, bytes, String(body?.mime || "image/jpeg"))
+        : await aiTranscribe(env, bytes, String(body?.filename || "voice.ogg"));
+      return json({ ok: Boolean(String(text).trim()), text: String(text).slice(0, 4000) });
+    } catch (error) {
+      return json({ ok: false, reason: String(error?.message || error).slice(0, 200) }, 502);
     }
   }
 
