@@ -1534,7 +1534,7 @@ async function routeApi(request, env, url, path, method) {
   if (path === "/api/health" && method === "GET") return json({ status: "ok", product: "takt" });
 
   // Внутренние и админские маршруты не должны быть открытыми на workers.dev.
-  if (/^\/api\/(?:agent|settings|reminders)/.test(path)) {
+  if (/^\/api\/(?:agent|settings|reminders|ai)/.test(path)) {
     const denied = await requireAdmin(request, env);
     if (denied) return denied;
   }
@@ -1608,6 +1608,19 @@ async function routeApi(request, env, url, path, method) {
 
   if (path === "/api/reports/weekly" && method === "GET") {
     return json({ text: await weeklyReport(env) });
+  }
+
+  if (path === "/api/ai/check" && method === "GET") {
+    if (!aiEnabled(env)) return json({ ok: false, reason: "AI не настроен" }, 503);
+    try {
+      const response = await fetch(aiUrl(env, "models"), {
+        headers: { Authorization: `Bearer ${env.AI_API_KEY}` },
+      });
+      if (!response.ok) return json({ ok: false, reason: `AI HTTP ${response.status}` }, 502);
+      return json({ ok: true, provider: isGemini(env) ? "gemini" : "openai-compatible", model: aiModel(env) });
+    } catch {
+      return json({ ok: false, reason: "AI недоступен" }, 502);
+    }
   }
 
   if (path === "/api/agent/digest" && method === "GET") {
