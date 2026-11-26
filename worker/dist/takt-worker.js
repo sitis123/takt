@@ -1653,6 +1653,23 @@ async function routeApi(request, env, url, path, method) {
     }
   }
 
+  if (path === "/api/ai/models" && method === "GET") {
+    if (!aiEnabled(env)) return json({ ok: false, reason: "AI не настроен" }, 503);
+    try {
+      const response = await fetch(aiUrl(env, "models"), {
+        headers: { Authorization: `Bearer ${env.AI_API_KEY}` },
+      });
+      if (!response.ok) return json({ ok: false, reason: `AI HTTP ${response.status}` }, 502);
+      const data = await response.json();
+      const models = Array.isArray(data?.data)
+        ? data.data.map((item) => String(item?.id || "")).filter((id) => id.startsWith("gemini"))
+        : [];
+      return json({ ok: true, models });
+    } catch {
+      return json({ ok: false, reason: "AI недоступен" }, 502);
+    }
+  }
+
   // Админская проверка фото/голоса через те же функции, что использует бот.
   if (path === "/api/ai/probe" && method === "POST") {
     if (!aiEnabled(env)) return json({ ok: false, reason: "AI не настроен" }, 503);
